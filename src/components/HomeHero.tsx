@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Feedback, MenuItem } from '../types';
-import { ArrowRight, MapPin, Contact, Clock, Facebook, Star, Quote, Sparkles, Award } from 'lucide-react';
+import { ArrowRight, MapPin, Contact, Clock, Facebook, Star, Quote, Sparkles, Award, Layers, Maximize2, Minimize2 } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import VinyardLogo from './VinyardLogo';
+import AnimatedHQMarker from './AnimatedHQMarker';
 
 interface HomeHeroProps {
   onOrderClick: () => void;
@@ -18,6 +20,8 @@ const isMapKeyConfigured = Boolean(MAPS_API_KEY) && MAPS_API_KEY !== 'YOUR_API_K
 export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProps) {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [averageScore, setAverageScore] = useState(5.0);
+  const [mapTypeId, setMapTypeId] = useState<'roadmap' | 'satellite' | 'hybrid' | 'terrain'>('roadmap');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     fetch('/api/feedback')
@@ -41,35 +45,43 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
         <div className="absolute inset-0 bg-gradient-to-r from-brand-green via-brand-green/95 to-brand-green/30 z-10"></div>
         <div 
           className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-30"
-          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1200')` }}
+          style={{ backgroundImage: `url('/src/assets/images/vinyard_storefront_1779375096734.png')` }}
         ></div>
 
-        <div className="relative z-20 max-w-2xl space-y-6">
-          <div className="inline-flex items-center gap-1.5 bg-amber-500/10 text-[#ffa457] border border-brand-orange/40 rounded-full px-3 py-1 font-mono text-xs font-semibold uppercase tracking-widest leading-none">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>The Premium Smash Burger Experience</span>
+        <div className="relative z-20 w-full grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+          <div className="md:col-span-8 lg:col-span-7 space-y-6">
+            <div className="inline-flex items-center gap-1.5 bg-amber-500/10 text-[#ffa457] border border-brand-orange/40 rounded-full px-3 py-1 font-mono text-xs font-semibold uppercase tracking-widest leading-none">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>The Premium Smash Burger Experience</span>
+            </div>
+
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight">
+              Vinyard <br className="hidden sm:inline" />
+              <span className="text-brand-orange-hover">Burger Bar</span>
+            </h1>
+
+            <p className="text-zinc-300 font-sans text-base sm:text-lg leading-relaxed max-w-xl">
+              Sizzling premium hand-smashed beef patties, melted aged cheddar, secret house-spread, and buttery artisanal buns toasted to a crunch. Proudly serving Hinunangan, Southern Leyte since 2020.
+            </p>
+
+            <div className="pt-2 flex flex-wrap gap-4">
+              <button
+                onClick={onOrderClick}
+                className="bg-brand-orange hover:bg-brand-orange-hover text-white py-3 px-7 rounded font-serif font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer border border-[#6f3900] active:scale-98"
+              >
+                Order Now
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <div className="flex items-center gap-2 text-zinc-300 font-mono text-xs font-semibold cursor-default">
+                <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
+                <span>KITCHEN IS ACTIVE & TAKING INCOMING QUEUES</span>
+              </div>
+            </div>
           </div>
 
-          <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-            Vinyard <br className="hidden sm:inline" />
-            <span className="text-brand-orange-hover">Burger Bar</span>
-          </h1>
-
-          <p className="text-zinc-300 font-sans text-base sm:text-lg leading-relaxed max-w-xl">
-            Sizzling premium hand-smashed beef patties, melted aged cheddar, secret house-spread, and buttery artisanal buns toasted to a crunch. Proudly serving Hinunangan, Southern Leyte since 2020.
-          </p>
-
-          <div className="pt-2 flex flex-wrap gap-4">
-            <button
-              onClick={onOrderClick}
-              className="bg-brand-orange hover:bg-brand-orange-hover text-white py-3 px-7 rounded font-serif font-bold transition-all shadow-md flex items-center gap-2 cursor-pointer border border-[#6f3900] active:scale-98"
-            >
-              Order Now
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-2 text-zinc-300 font-mono text-xs font-semibold cursor-default">
-              <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
-              <span>KITCHEN IS ACTIVE & TAKING INCOMING QUEUES</span>
+          <div className="md:col-span-4 lg:col-span-5 flex justify-center items-center">
+            <div className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-72 lg:h-72 transition-all duration-500 hover:scale-[1.03] select-none">
+              <VinyardLogo size="100%" className="drop-shadow-[0_12px_24px_rgba(4,26,16,0.5)]" />
             </div>
           </div>
         </div>
@@ -238,20 +250,49 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
         </div>
 
         {/* Dynamic Map Frame Component */}
-        <div className="md:col-span-7 h-[350px] md:h-auto min-h-[350px] rounded-xl overflow-hidden border border-gray-200 relative bg-zinc-100">
+        <div className={`md:col-span-7 transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[100] bg-white rounded-none border-none' : 'h-[350px] md:h-auto min-h-[350px] rounded-xl overflow-hidden border border-gray-200 relative bg-zinc-100 group'}`}>
           {isMapKeyConfigured ? (
             <APIProvider apiKey={MAPS_API_KEY} version="weekly">
               <Map
                 defaultCenter={{ lat: 10.3971559, lng: 125.1983495 }}
                 defaultZoom={15}
                 mapId="VINYARD_MAP_HQ"
+                mapTypeId={mapTypeId}
                 internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
                 style={{ width: '100%', height: '100%' }}
               >
-                <AdvancedMarker position={{ lat: 10.3971559, lng: 125.1983495 }} title="Vinyard Burger Bar">
-                  <Pin background="#012d1d" borderColor="#ffa457" glyphColor="#ffffff" />
-                </AdvancedMarker>
+                <AnimatedHQMarker position={{ lat: 10.3971559, lng: 125.1983495 }} title="Vinyard Burger Bar (HQ)" />
               </Map>
+              
+              {/* Map Controls */}
+              <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
+                <button 
+                  onClick={() => setMapTypeId(prev => prev === 'roadmap' ? 'satellite' : 'roadmap')}
+                  className="bg-white hover:bg-zinc-50 text-brand-green p-2.5 rounded-lg shadow-lg border border-gray-200 transition-all flex items-center gap-2 font-mono text-[10px] uppercase font-bold tracking-wider hover:scale-105 active:scale-95 group/btn"
+                  title="Toggle Map View"
+                >
+                  <Layers className="w-4 h-4 text-brand-orange group-hover/btn:rotate-12 transition-transform" />
+                  <span>{mapTypeId === 'roadmap' ? 'Satellite' : 'Roadmap'}</span>
+                </button>
+
+                <button 
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className="bg-white hover:bg-zinc-50 text-brand-green p-2.5 rounded-lg shadow-lg border border-gray-200 transition-all flex items-center gap-2 font-mono text-[10px] uppercase font-bold tracking-wider hover:scale-105 active:scale-95 group/fullscreen"
+                  title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Map"}
+                >
+                  {isFullscreen ? (
+                    <>
+                      <Minimize2 className="w-4 h-4 text-brand-orange" />
+                      <span>Minimize</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="w-4 h-4 text-brand-orange" />
+                      <span>Full View</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </APIProvider>
           ) : (
             <div className="w-full h-full flex flex-col justify-between p-6 bg-slate-900 text-white relative">

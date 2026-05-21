@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User } from '../types';
 import { Mail, Lock, User as UserIcon, LogIn, ArrowRight, CheckCircle } from 'lucide-react';
+import VinyardLogo from './VinyardLogo';
 
 interface SecurityPortalProps {
   onLoginSuccess: (user: User) => void;
@@ -132,9 +133,7 @@ export default function SecurityPortal({ onLoginSuccess, onClose }: SecurityPort
     <div className="w-full max-w-[480px] bg-white rounded-lg shadow-2xl overflow-hidden border border-brand-green/10">
       {/* Brand Header */}
       <div className="pt-10 pb-6 flex flex-col items-center bg-zinc-50 border-b border-gray-100">
-        <div className="w-20 h-20 bg-brand-green text-white rounded-full flex items-center justify-center font-bold text-2xl mb-3 shadow-md">
-          VY
-        </div>
+        <VinyardLogo size={110} className="mb-2 drop-shadow-md" />
         <h1 className="font-serif text-3xl font-bold text-brand-green tracking-tight">VINYARD</h1>
         <p className="font-mono text-xs uppercase tracking-widest text-brand-orange font-bold mt-1">Authentic • Local • Fresh</p>
       </div>

@@ -19,6 +19,40 @@ body {
   background-color: #f7f9ff;
 }
 
+/* Print Overrides to display printer-friendly receipts and save ink */
+@media print {
+  /* Hide every element on screen */
+  body * {
+    visibility: hidden;
+  }
+  
+  /* Show only the print receipt and all its children */
+  #print-receipt, #print-receipt * {
+    visibility: visible;
+  }
+  
+  /* Style print receipt for single column ink-saver roll */
+  #print-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    color: black !important;
+  }
+  
+  /* Remove high ink backgrounds, shadows, and images for printing */
+  * {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: black !important;
+  }
+}
+
 /* Custom rustic design patterns */
 .rustic-wood-texture {
   background-image: radial-gradient(rgba(1, 45, 29, 0.05) 1px, transparent 1px);

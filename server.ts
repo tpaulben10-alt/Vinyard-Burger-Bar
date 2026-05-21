@@ -31,7 +31,8 @@ const INITIAL_MENU: MenuItem[] = [
     price: 185.00,
     category: "burgers",
     imageUrl: "https://images.unsplash.com/photo-1571066811602-71683a3f680d?w=600&auto=format&fit=crop&q=80",
-    signature: true
+    signature: true,
+    popular: true
   },
   {
     id: "burger-chefs-choice",
@@ -48,7 +49,8 @@ const INITIAL_MENU: MenuItem[] = [
     description: "Double home-made beef patties topped with bacon, sliced cheese, onions, fresh lettuce, fresh tomato, and our signature Vinyard sauce.",
     price: 295.00,
     category: "burgers",
-    imageUrl: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600&auto=format&fit=crop&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600&auto=format&fit=crop&q=80",
+    newArrival: true
   },
   {
     id: "burger-bacon-bbq",
@@ -108,7 +110,8 @@ const INITIAL_MENU: MenuItem[] = [
     description: "Sweet and spicy Asian-style pasta with tender chicken and mushrooms, served with garlic bread.",
     price: 185.00,
     category: "pasta",
-    imageUrl: "https://images.unsplash.com/photo-1546548970-71785318a17b?w=600&auto=format&fit=crop&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1546548970-71785318a17b?w=600&auto=format&fit=crop&q=80",
+    newArrival: true
   },
   {
     id: "pasta-pinoy-spaghetti",
@@ -133,7 +136,8 @@ const INITIAL_MENU: MenuItem[] = [
     description: "Fettuccine pasta in creamy Alfredo sauce with chicken tenders, served with garlic bread.",
     price: 185.00,
     category: "pasta",
-    imageUrl: "https://images.unsplash.com/photo-1645112411341-6c4fd023714a?w=600&auto=format&fit=crop&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1645112411341-6c4fd023714a?w=600&auto=format&fit=crop&q=80",
+    popular: true
   },
   {
     id: "pasta-ham-mushroom",
@@ -779,7 +783,7 @@ async function startServer() {
   });
 
   app.post("/api/orders/create", (req, res) => {
-    const { userId, items, subtotal, deliveryFee, distance, total, paymentMethod, address, lat, lng, redeemPoints } = req.body;
+    const { userId, items, subtotal, deliveryFee, distance, total, paymentMethod, address, lat, lng, redeemPoints, deliveryInstructions } = req.body;
     if (!userId || !items || items.length === 0) {
        res.status(400).json({ error: "Invalid order parameters" });
        return;
@@ -805,8 +809,9 @@ async function startServer() {
     
     // Estimate Time to finish (e.g. baseline 15 mins + 3 mins per item)
     const count = items.reduce((acc: number, item: OrderItem) => acc + item.qty, 0);
-    const estimatedMinutes = 15 + count * 2;
+    const estimatedMinutes = typeof req.body.estimatedMinutes === "number" ? req.body.estimatedMinutes : 15 + count * 2;
 
+    const nowIso = new Date().toISOString();
     const newOrder: Order = {
       id: orderId,
       userId,
@@ -817,12 +822,16 @@ async function startServer() {
       distance: distance !== undefined ? distance : 0,
       total,
       status: "received",
-      createdAt: new Date().toISOString(),
+      createdAt: nowIso,
       estimatedMinutes,
       paymentMethod: ["counter", "gcash", "card"].includes(paymentMethod) ? paymentMethod : "delivery",
       address: address || user.address || "Catmonan St., Poblacion , Hinunangan, Philippines",
       lat: lat !== undefined ? lat : user.lat || 10.3971559,
-      lng: lng !== undefined ? lng : user.lng || 125.1983495
+      lng: lng !== undefined ? lng : user.lng || 125.1983495,
+      deliveryInstructions: deliveryInstructions || undefined,
+      statusHistory: [
+        { status: "received", timestamp: nowIso }
+      ]
     };
 
     store.orders.unshift(newOrder);
@@ -847,6 +856,18 @@ async function startServer() {
     }
 
     order.status = status;
+    if (!order.statusHistory) {
+      order.statusHistory = [
+        { status: "received", timestamp: order.createdAt || new Date().toISOString() }
+      ];
+    }
+    const lastHistory = order.statusHistory[order.statusHistory.length - 1];
+    if (!lastHistory || lastHistory.status !== status) {
+      order.statusHistory.push({
+        status,
+        timestamp: new Date().toISOString()
+      });
+    }
     writeDB(store);
     res.json({ success: true, order });
   });

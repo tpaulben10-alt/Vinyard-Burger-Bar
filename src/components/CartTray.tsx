@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { OrderItem, User } from '../types';
-import { X, Trash2, Plus, Minus, CreditCard, Landmark, Truck, UserPlus, Gift, AlertCircle, Smartphone, Wallet, QrCode } from 'lucide-react';
+import { X, Trash2, Plus, Minus, CreditCard, Landmark, Truck, UserPlus, Gift, AlertCircle, Smartphone, Wallet, QrCode, Clock } from 'lucide-react';
 
 interface CartTrayProps {
   currentUser: User | null;
@@ -26,6 +26,7 @@ export default function CartTray({
   const [address, setAddress] = useState(currentUser?.address || 'Catmonan St., Poblacion , Hinunangan, Philippines');
   const [lat, setLat] = useState(currentUser?.lat || 10.3971559);
   const [lng, setLng] = useState(currentUser?.lng || 125.1983495);
+  const [deliveryInstructions, setDeliveryInstructions] = useState('');
   
   // Payment option parameters
   const [paymentOpt, setPaymentOpt] = useState<'cash' | 'gcash' | 'card'>('cash');
@@ -71,6 +72,45 @@ export default function CartTray({
   const loyaltyDiscount = redeemPointsChecked ? maxRedeemablePoints : 0;
   const total = Math.max(0, subtotal + deliveryFee - loyaltyDiscount);
 
+  // Estimate preparation time based on item types and quantity
+  const getPrepTimePerUnit = (id: string, name: string): number => {
+    const lowercaseId = id.toLowerCase();
+    const lowercaseName = name.toLowerCase();
+    if (lowercaseId.startsWith('burger') || lowercaseName.includes('burger')) {
+      return 8; // Burgers: 8 mins
+    } else if (lowercaseId.startsWith('pasta') || lowercaseName.includes('pasta') || lowercaseName.includes('spaghetti') || lowercaseName.includes('carbonara') || lowercaseName.includes('fettuccine')) {
+      return 12; // Pasta: 12 mins
+    } else if (lowercaseId.startsWith('chicken') || lowercaseName.includes('chicken') || lowercaseName.includes('wings')) {
+      return 12; // Chicken: 12 mins
+    } else if (lowercaseId.startsWith('rice') || lowercaseName.includes('rice') || lowercaseName.includes('steak')) {
+      return 10; // Rice meals: 10 mins
+    } else if (lowercaseId.startsWith('sides') || lowercaseName.includes('fries') || lowercaseName.includes('wedges') || lowercaseName.includes('rings') || lowercaseName.includes('nachos') || lowercaseName.includes('onion')) {
+      return 5; // Sides: 5 mins
+    } else if (lowercaseId.startsWith('drinks') || lowercaseName.includes('iced') || lowercaseName.includes('latte') || lowercaseName.includes('soda') || lowercaseName.includes('lemonade') || lowercaseName.includes('coffee') || lowercaseName.includes('tea') || lowercaseName.includes('beverage')) {
+      return 2; // Drinks: 2 mins
+    }
+    return 7; // Default
+  };
+
+  const totalItemCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
+  const maxSinglePrepTime = cartItems.length > 0 
+    ? Math.max(...cartItems.map(item => getPrepTimePerUnit(item.menuItemId, item.name)))
+    : 0;
+  
+  // Extra incremental prep time for higher quantity
+  const additionalQtyPrep = Math.max(0, totalItemCount - 1) * 1.5;
+  
+  const estimatedKitchenPrepMins = cartItems.length > 0
+    ? Math.round(maxSinglePrepTime + additionalQtyPrep)
+    : 0;
+
+  // Let's also include travel/delivery time if serviceMode is delivery
+  const estimatedDeliveryMins = serviceMode === 'delivery' 
+    ? Math.round(5 + distance * 1.5) // 5 minutes baseline delivery prep & bike trip
+    : 0;
+
+  const totalEstimatedMins = estimatedKitchenPrepMins + estimatedDeliveryMins;
+
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
     if (!currentUser) {
@@ -106,7 +146,9 @@ export default function CartTray({
           address: serviceMode === 'delivery' ? address : 'Counter Pick-up',
           lat: serviceMode === 'delivery' ? lat : 10.3971559,
           lng: serviceMode === 'delivery' ? lng : 125.1983495,
-          redeemPoints: redeemPointsChecked ? maxRedeemablePoints : 0
+          deliveryInstructions: serviceMode === 'delivery' ? deliveryInstructions : undefined,
+          redeemPoints: redeemPointsChecked ? maxRedeemablePoints : 0,
+          estimatedMinutes: totalEstimatedMins
         })
       });
 
@@ -268,6 +310,16 @@ export default function CartTray({
                   </div>
                   <div className="text-[10px] text-gray-400 font-mono italic">
                     ★ To customize coordinates, configure inside <strong>My Profile settings page</strong>.
+                  </div>
+                  <div className="pt-2 border-t border-gray-200/60 mt-1">
+                    <label className="block text-[9px] uppercase font-mono tracking-wider font-bold text-gray-400 mb-1">Gate Code / Delivery Instructions</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Leave at front desk, Gate Code: 1234..."
+                      value={deliveryInstructions}
+                      onChange={(e) => setDeliveryInstructions(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded bg-white font-sans text-xs focus:ring-1 focus:ring-brand-orange focus:outline-none"
+                    />
                   </div>
                 </div>
               )}
@@ -471,6 +523,27 @@ export default function CartTray({
               <div className="flex justify-between text-[#914c00] font-bold">
                 <span>Estimated Point gain:</span>
                 <span>⭐⭐ +{Math.floor(total / 10)} PTS</span>
+              </div>
+
+              <div className="flex justify-between text-zinc-700 font-semibold border-t border-dashed border-gray-200 pt-1.5 pb-0.5">
+                <span className="flex items-center gap-1 font-sans">
+                  <Clock className="w-3.5 h-3.5 text-brand-orange animate-pulse" />
+                  <span>Estimated Duration:</span>
+                </span>
+                <span className="text-brand-orange font-bold font-mono">~{totalEstimatedMins} Mins</span>
+              </div>
+
+              <div className="text-[10px] text-gray-500 pl-4.5 -mt-0.5 pb-1 space-y-0.5">
+                <div className="flex justify-between font-sans">
+                  <span>• Kitchen Prep ({totalItemCount} item{totalItemCount !== 1 ? 's' : ''}):</span>
+                  <span className="font-mono">~{estimatedKitchenPrepMins} mins</span>
+                </div>
+                {serviceMode === 'delivery' && (
+                  <div className="flex justify-between font-sans">
+                    <span>• Rider Delivery (~{distance.toFixed(1)} km):</span>
+                    <span className="font-mono">~{estimatedDeliveryMins} mins</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-between text-base font-serif font-black text-brand-green pt-2 border-t border-gray-200">

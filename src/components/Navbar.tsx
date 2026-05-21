@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '../types';
 import { ShoppingBag, MapPin, Award, LogOut, User as UserIcon, ShieldAlert } from 'lucide-react';
+import VinyardLogo from './VinyardLogo';
 
 interface NavbarProps {
   currentUser: User | null;
@@ -33,9 +34,7 @@ export default function Navbar({
             onClick={() => setScreen('home')} 
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="w-12 h-12 rounded-full border border-white/20 bg-brand-orange text-white flex items-center justify-center font-serif font-black text-xl transition-all group-hover:bg-amber-600 shadow-inner">
-              VY
-            </div>
+            <VinyardLogo size={52} className="group-hover:scale-105 transition-all duration-300 transform" />
             <div>
               <span className="font-serif text-2xl font-bold tracking-tight block text-white group-hover:text-brand-orange-hover transition-colors">
                 VINYARD

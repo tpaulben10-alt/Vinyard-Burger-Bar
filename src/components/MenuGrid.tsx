@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem, OrderItem } from '../types';
-import { Sparkles, Heart, Check, Plus, Minus, X, MessageSquare, Award, Clock } from 'lucide-react';
+import { Sparkles, Heart, Check, Plus, Minus, X, MessageSquare, Award, Clock, Flame, Zap } from 'lucide-react';
 
 interface MenuGridProps {
   onAddToTray: (item: OrderItem) => void;
@@ -16,8 +16,12 @@ export default function MenuGrid({
   availableLoyaltyPoints
 }: MenuGridProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [activeCategory, setActiveCategory] = useState<'all' | 'burgers' | 'pasta' | 'sides' | 'rice-meals' | 'chicken' | 'drinks'>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'popular' | 'new-arrival' | 'burgers' | 'pasta' | 'sides' | 'rice-meals' | 'chicken' | 'drinks' | string>('all');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  
+  // Real sales statistics from historical orders Database
+  const [salesCounts, setSalesCounts] = useState<Record<string, number>>({});
+  const [popularItemIds, setPopularItemIds] = useState<Set<string>>(new Set());
   
   // Customization fields
   const [qty, setQty] = useState(1);
@@ -38,6 +42,35 @@ export default function MenuGrid({
         }
       })
       .catch(err => console.error("Could not fetch menu data", err));
+  }, []);
+
+  // Fetch all historical orders to calculate real-time sales popularity rankings
+  useEffect(() => {
+    fetch('/api/orders')
+      .then(res => res.json())
+      .then(orders => {
+        if (Array.isArray(orders)) {
+          const counts: Record<string, number> = {};
+          orders.forEach((order: any) => {
+            if (order.status !== 'cancelled' && Array.isArray(order.items)) {
+              order.items.forEach((item: any) => {
+                counts[item.menuItemId] = (counts[item.menuItemId] || 0) + (item.qty || 1);
+              });
+            }
+          });
+          setSalesCounts(counts);
+
+          // Find the top-selling items over 0 sales
+          const sorted = Object.entries(counts)
+            .filter(([_, qty]) => qty > 0)
+            .sort((a, b) => b[1] - a[1]);
+
+          // Set top 4 distinct items as popular
+          const topPopular = new Set(sorted.slice(0, 4).map(([id]) => id));
+          setPopularItemIds(topPopular);
+        }
+      })
+      .catch(err => console.error("Could not fetch sales data from orders database", err));
   }, []);
 
   // Quick select trigger from Homepage feature clicks
@@ -90,6 +123,8 @@ export default function MenuGrid({
 
   const filteredItems = menuItems.filter(item => {
     if (activeCategory === 'all') return true;
+    if (activeCategory === 'popular') return item.popular || popularItemIds.has(item.id) || item.bestSeller;
+    if (activeCategory === 'new-arrival') return item.newArrival;
     return item.category === activeCategory;
   });
 
@@ -112,9 +147,11 @@ export default function MenuGrid({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {['all', 'burgers', 'pasta', 'sides', 'rice-meals', 'chicken', 'drinks'].map(cat => {
+          {['all', 'popular', 'new-arrival', 'burgers', 'pasta', 'sides', 'rice-meals', 'chicken', 'drinks'].map(cat => {
             const labels: Record<string, string> = {
               all: 'All Items 📋',
+              popular: 'Popular 🔥',
+              'new-arrival': 'New & Fresh ✨',
               burgers: 'Burgers 🍔',
               pasta: 'Pasta & Noodles 🍝',
               sides: 'Sides & Appetizers 🍟',
@@ -159,11 +196,25 @@ export default function MenuGrid({
                   <Sparkles className="w-3 h-3 text-[#ffa457]" /> SIGNATURE
                 </span>
               )}
-              {item.bestSeller && (
-                <span className="absolute top-4 right-4 bg-brand-orange text-white text-[10px] uppercase font-mono font-bold px-2 py-1 rounded shadow select-none flex items-center gap-1">
-                  BEST SELLER
-                </span>
-              )}
+              
+              {/* Badges Stack on Top-Right */}
+              <div className="absolute top-4 right-4 flex flex-col gap-1.5 items-end">
+                {item.bestSeller && (
+                  <span className="bg-brand-orange text-white text-[10px] uppercase font-mono font-bold px-2.5 py-1 rounded shadow select-none flex items-center gap-1">
+                    ★ BEST SELLER
+                  </span>
+                )}
+                {(item.popular || popularItemIds.has(item.id)) && (
+                  <span className="bg-rose-500 text-white text-[10px] uppercase font-mono font-bold px-2.5 py-1 rounded shadow select-none flex items-center gap-1">
+                    <Flame className="w-3 h-3 text-white fill-white" /> POPULAR {salesCounts[item.id] > 0 ? `(${salesCounts[item.id]} Sold)` : ''}
+                  </span>
+                )}
+                {item.newArrival && (
+                  <span className="bg-blue-600 text-white text-[10px] uppercase font-mono font-bold px-2.5 py-1 rounded shadow select-none flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-white fill-white" /> NEW ARRIVAL
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Content body */}

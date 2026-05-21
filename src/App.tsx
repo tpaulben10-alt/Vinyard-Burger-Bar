@@ -159,7 +159,15 @@ export default function App() {
   const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
   return (
-    <div className="min-h-screen flex flex-col justify-between text-zinc-800">
+    <div 
+      className="min-h-screen flex flex-col justify-between text-zinc-800 relative bg-[#f7f9ff]"
+      style={{
+        backgroundImage: "linear-gradient(rgba(247, 249, 255, 0.91), rgba(247, 249, 255, 0.95)), url('/src/assets/images/vinyard_storefront_1779375096734.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       
       {/* Navbar segment */}
       <Navbar

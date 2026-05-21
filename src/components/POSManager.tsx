@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Order, User, Feedback } from '../types';
-import { ShieldCheck, Users, ClipboardList, Star, MapPin, CheckCircle, RefreshCcw, Activity } from 'lucide-react';
-import { APIProvider, Map, AdvancedMarker, Pin } from '@vis.gl/react-google-maps';
+import { ShieldCheck, Users, ClipboardList, Star, MapPin, CheckCircle, RefreshCcw, Activity, AlertTriangle, X, Printer, Maximize2, Minimize2 } from 'lucide-react';
+import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import AnimatedHQMarker from './AnimatedHQMarker';
 
 interface POSManagerProps {
   currentUser: User;
@@ -14,12 +15,91 @@ const MAPS_API_KEY =
 
 const isMapKeyConfigured = Boolean(MAPS_API_KEY) && MAPS_API_KEY !== 'YOUR_API_KEY';
 
+const hqCoords = { lat: 10.3971559, lng: 125.1983495 };
+
+// Helper to fit map bounds to multiple coordinates with movement threshold and zoom constraints
+function MapAutoFit({ locations }: { locations: google.maps.LatLngLiteral[] }) {
+  const map = useMap();
+  const prevLocationsRef = React.useRef<google.maps.LatLngLiteral[]>([]);
+  
+  // SIGNIFICANT_THRESHOLD in degrees (approx 10-11 meters)
+  const SIGNIFICANT_THRESHOLD = 0.0001;
+
+  const hasSignificantlyChanged = (newLocs: google.maps.LatLngLiteral[], oldLocs: google.maps.LatLngLiteral[]) => {
+    if (newLocs.length !== oldLocs.length) return true;
+    for (let i = 0; i < newLocs.length; i++) {
+      const dLat = Math.abs(newLocs[i].lat - oldLocs[i].lat);
+      const dLng = Math.abs(newLocs[i].lng - oldLocs[i].lng);
+      if (dLat > SIGNIFICANT_THRESHOLD || dLng > SIGNIFICANT_THRESHOLD) return true;
+    }
+    return false;
+  };
+
+  React.useEffect(() => {
+    if (!map || locations.length === 0) return;
+    
+    const shouldUpdate = hasSignificantlyChanged(locations, prevLocationsRef.current);
+    if (!shouldUpdate) return;
+
+    prevLocationsRef.current = locations;
+
+    const bounds = new google.maps.LatLngBounds();
+    locations.forEach(loc => bounds.extend(loc));
+    
+    // Auto-adjust zoom and center to fit all markers
+    map.fitBounds(bounds, {
+      top: 50,
+      right: 50,
+      bottom: 50,
+      left: 50
+    });
+
+    // Enforce zoom constraints [14, 17]
+    const listener = google.maps.event.addListenerOnce(map, 'idle', () => {
+      const zoom = map.getZoom() || 14;
+      if (zoom < 14) map.setZoom(14);
+      if (zoom > 17) map.setZoom(17);
+    });
+
+    return () => google.maps.event.removeListener(listener);
+  }, [map, JSON.stringify(locations)]); // locString used as stable dependency
+  
+  return null;
+}
+
+// Manual Recenter Control
+function RecenterControl({ locations }: { locations: google.maps.LatLngLiteral[] }) {
+  const map = useMap();
+  const handleRecenter = () => {
+    if (!map || locations.length === 0) return;
+    const bounds = new google.maps.LatLngBounds();
+    locations.forEach(loc => bounds.extend(loc));
+    map.fitBounds(bounds, { top: 50, right: 50, bottom: 50, left: 50 });
+    const listener = google.maps.event.addListenerOnce(map, 'idle', () => {
+      if (map.getZoom()! > 16) map.setZoom(16);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleRecenter}
+      className="absolute bottom-4 right-4 z-40 bg-white/90 backdrop-blur-sm hover:bg-white text-brand-green p-2 rounded-lg shadow-xl border border-gray-200 transition-all flex items-center justify-center hover:scale-110 active:scale-90 group"
+      title="Recenter Map View"
+    >
+      <RefreshCcw className="w-4 h-4 text-brand-orange group-hover:rotate-180 transition-transform duration-700" />
+    </button>
+  );
+}
+
+
 export default function POSManager({ currentUser }: POSManagerProps) {
   const [activeTab, setActiveTab] = useState<'orders' | 'accounts' | 'reviews'>('orders');
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [reviews, setReviews] = useState<Feedback[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Status logs
   const [infoMsg, setInfoMsg] = useState('');
@@ -225,22 +305,36 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                           </p>
                         </div>
 
-                        {/* Badging statuses */}
-                        <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-mono font-bold border ${
-                          order.status === 'received' 
-                            ? 'bg-blue-50 border-blue-200 text-blue-700'
-                            : order.status === 'preparing' 
-                              ? 'bg-amber-50 border-amber-200 text-amber-700'
-                              : order.status === 'ready' 
-                                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                                : order.status === 'delivering' 
-                                  ? 'bg-purple-50 border-purple-200 text-purple-700'
-                                  : order.status === 'complete' 
-                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                                    : 'bg-red-50 border-red-200 text-red-700'
-                        }`}>
-                          {order.status}
-                        </span>
+                        {/* Badging statuses and Cancel action */}
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <span className={`px-2 py-0.5 rounded text-[9px] uppercase font-mono font-bold border ${
+                            order.status === 'received' 
+                              ? 'bg-blue-50 border-blue-200 text-blue-700'
+                              : order.status === 'preparing' 
+                                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                                : order.status === 'ready' 
+                                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                                  : order.status === 'delivering' 
+                                    ? 'bg-purple-50 border-purple-200 text-purple-700'
+                                    : order.status === 'complete' 
+                                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                      : 'bg-red-50 border-red-200 text-red-700'
+                          }`}>
+                            {order.status}
+                          </span>
+
+                          {order.status !== 'cancelled' && order.status !== 'complete' && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOrderToCancel(order);
+                              }}
+                              className="text-[10px] font-mono font-bold text-red-600 hover:text-white bg-red-50 hover:bg-red-600 border border-red-200 hover:border-red-600 px-2 py-0.5 rounded transition shadow-sm cursor-pointer"
+                            >
+                              Cancel Order
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -269,20 +363,29 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                     </p>
                   </div>
 
-                  <div className="space-y-1 text-right">
-                    <span className="block text-[10px] font-mono text-gray-400 font-bold uppercase">Change Pipeline Step</span>
-                    <select
-                      value={selectedOrder.status}
-                      onChange={(e) => handleUpdateStatus(selectedOrder.id, e.target.value)}
-                      className="text-xs font-mono font-bold bg-zinc-50 text-brand-green border border-gray-300 py-1.5 px-3 rounded cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-orange"
-                    >
-                      <option value="received">1. Received</option>
-                      <option value="preparing">2. Preparing</option>
-                      <option value="ready">3. Ready / Dispatched</option>
-                      <option value="delivering">4. Out for Delivery</option>
-                      <option value="complete">5. Served / Complete</option>
-                      <option value="cancelled">6. Cancel / Void</option>
-                    </select>
+                  <div className="space-y-2 text-right">
+                    <span className="block text-[10px] font-mono text-gray-400 font-bold uppercase">POS Controls</span>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <button
+                        onClick={() => window.print()}
+                        className="flex items-center gap-1.5 bg-brand-green hover:bg-brand-green-hover text-white py-1.5 px-3 rounded font-serif font-bold text-xs tracking-wide transition-all shadow-sm cursor-pointer border border-[#143e2d] hover:scale-102 active:scale-98"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-brand-orange-hover" />
+                        <span>Print Receipt</span>
+                      </button>
+                      <select
+                        value={selectedOrder.status}
+                        onChange={(e) => handleUpdateStatus(selectedOrder.id, e.target.value)}
+                        className="text-xs font-mono font-bold bg-zinc-50 text-brand-green border border-gray-300 py-1.5 px-3 rounded cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-orange toggle-print-ignore"
+                      >
+                        <option value="received">1. Received</option>
+                        <option value="preparing">2. Preparing</option>
+                        <option value="ready">3. Ready / Dispatched</option>
+                        <option value="delivering">4. Out for Delivery</option>
+                        <option value="complete">5. Served / Complete</option>
+                        <option value="cancelled">6. Cancel / Void</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -312,6 +415,12 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                   <div className="space-y-1 font-mono text-xs text-right sm:text-left">
                     <p className="text-gray-400">Target Address Destination:</p>
                     <p className="font-bold text-brand-green truncate" title={selectedOrder.address}>{selectedOrder.address}</p>
+                    {selectedOrder.deliveryInstructions && (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-800">
+                        <span className="font-bold flex items-center gap-1 mb-0.5 whitespace-nowrap"><AlertTriangle className="w-3 h-3" /> Note from Customer:</span>
+                        <span className="italic block mt-1">"{selectedOrder.deliveryInstructions}"</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -371,22 +480,58 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                 {/* Map monitoring pinpoint */}
                 <div className="space-y-2">
                   <span className="text-xs uppercase font-mono font-bold text-gray-400 block">Deliver coordinates radar mapping</span>
-                  <div className="h-56 rounded border border-gray-200 overflow-hidden relative bg-zinc-100">
+                  <div className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[100] bg-white rounded-none border-none' : 'h-56 rounded border border-gray-200 overflow-hidden relative bg-zinc-100'}`}>
                     {isMapKeyConfigured ? (
                       <APIProvider apiKey={MAPS_API_KEY} version="weekly">
                         <Map
-                          center={{ lat: selectedOrder.lat || 10.3971559, lng: selectedOrder.lng || 125.1983495 }}
-                          zoom={14}
+                          defaultCenter={hqCoords}
+                          defaultZoom={14}
                           mapId="POS_HQ_MONITOR_MAP"
-                          internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+                          internalUsageAttributionIds= {['gmp_mcp_codeassist_v1_aistudio']}
                           style={{ width: '100%', height: '100%' }}
                         >
+                          {/* Restaurant HQ Marker */}
+                          <AnimatedHQMarker 
+                            position={hqCoords}
+                            title="Vinyard Burger Bar (HQ)"
+                          />
+
+                          {/* Customer Destination Marker */}
                           <AdvancedMarker 
                             position={{ lat: selectedOrder.lat || 10.3971559, lng: selectedOrder.lng || 125.1983495 }}
                             title={selectedOrder.customerName}
                           >
                             <Pin background="#914c00" borderColor="#ffa457" glyphColor="#ffffff" />
                           </AdvancedMarker>
+
+                          {/* Auto-fit logic */}
+                          <MapAutoFit 
+                            locations={[
+                              hqCoords,
+                              { lat: selectedOrder.lat || 10.3971559, lng: selectedOrder.lng || 125.1983495 }
+                            ]} 
+                          />
+
+                          {/* Manual Recenter Control */}
+                          <RecenterControl 
+                            locations={[
+                              hqCoords,
+                              { lat: selectedOrder.lat || 10.3971559, lng: selectedOrder.lng || 125.1983495 }
+                            ]} 
+                          />
+
+                          {/* Fullscreen Toggle */}
+                          <button 
+                            onClick={() => setIsFullscreen(!isFullscreen)}
+                            className="absolute top-4 right-4 z-40 bg-white/90 backdrop-blur-sm hover:bg-white text-brand-green p-2.5 rounded-lg shadow-xl border border-gray-200 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group/fullscreen"
+                            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+                          >
+                            {isFullscreen ? (
+                              <Minimize2 className="w-5 h-5 text-brand-orange" />
+                            ) : (
+                              <Maximize2 className="w-5 h-5 text-brand-orange" />
+                            )}
+                          </button>
                         </Map>
                       </APIProvider>
                     ) : (
@@ -525,6 +670,44 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Confirmation Dialog */}
+      {orderToCancel && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 max-w-sm w-full p-6 space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 mx-auto">
+              <AlertTriangle className="w-6 h-6 animate-bounce" />
+            </div>
+            
+            <div className="text-center space-y-1.5">
+              <h3 className="font-serif text-lg font-bold text-brand-green">Cancel Order?</h3>
+              <p className="text-xs text-gray-500 font-sans leading-relaxed">
+                Are you sure you want to cancel order <strong className="font-mono text-zinc-900">{orderToCancel.id}</strong> for <strong className="text-zinc-900">{orderToCancel.customerName}</strong>? This action will set the order status to cancelled in the database.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setOrderToCancel(null)}
+                className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 font-serif font-bold text-xs py-2 px-4 rounded border border-gray-200 transition cursor-pointer"
+              >
+                Keep Order
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleUpdateStatus(orderToCancel.id, 'cancelled');
+                  setOrderToCancel(null);
+                }}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-serif font-bold text-xs py-2 px-4 rounded transition cursor-pointer"
+              >
+                Yes, Cancel
+              </button>
             </div>
           </div>
         </div>

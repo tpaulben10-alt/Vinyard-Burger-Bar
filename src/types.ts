@@ -19,6 +19,8 @@ export interface MenuItem {
   imageUrl: string;
   bestSeller?: boolean;
   signature?: boolean;
+  popular?: boolean;
+  newArrival?: boolean;
 }
 
 export interface OrderItem {
@@ -50,8 +52,10 @@ export interface Order {
   address?: string;
   lat?: number;
   lng?: number;
+  deliveryInstructions?: string;
   rating?: number;
   feedback?: string;
+  statusHistory?: { status: string; timestamp: string }[];
 }
 
 export interface Feedback {
