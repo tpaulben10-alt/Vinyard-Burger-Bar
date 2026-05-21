@@ -41,13 +41,28 @@ export default function CartTray({
     }
   }, [currentUser]);
 
+  // Haversine helper to calculate straight-line physical distance in kilometers
+  const getHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
+  };
+
   // Pricing computations
   const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const distance = serviceMode === 'delivery' ? getHaversineDistance(10.3971559, 125.1983495, lat, lng) : 0;
+  const deliveryFee = serviceMode === 'delivery' ? parseFloat((2.00 + (distance * 0.50)).toFixed(2)) : 0;
 
   // Points conversion: 100 points = $1.00 discount
   const maxRedeemablePoints = currentUser ? Math.min(currentUser.loyaltyPoints, Math.floor(subtotal * 100)) : 0;
   const loyaltyDiscount = redeemPointsChecked ? Number((maxRedeemablePoints / 100).toFixed(2)) : 0;
-  const total = Math.max(0, subtotal - loyaltyDiscount);
+  const total = Math.max(0, subtotal + deliveryFee - loyaltyDiscount);
 
   const handleCheckout = async () => {
     if (cartItems.length === 0) return;
@@ -67,6 +82,8 @@ export default function CartTray({
           userId: currentUser.id,
           items: cartItems,
           subtotal,
+          deliveryFee,
+          distance,
           total,
           paymentMethod: serviceMode === 'counter' ? 'counter' : 'delivery',
           address: serviceMode === 'delivery' ? address : 'Counter Pick-up',
@@ -222,9 +239,15 @@ export default function CartTray({
                     <p className="font-serif font-bold text-brand-green">{currentUser?.name || 'Guest User'}</p>
                     <p className="text-zinc-600 font-sans mt-0.5">{address}</p>
                   </div>
-                  <div className="pt-2 border-t border-gray-200/60 font-mono text-[10px] text-gray-400 space-y-0.5 flex justify-between items-baseline">
-                    <span>GPS Map coordinates:</span>
-                    <span className="font-semibold text-brand-orange-hover">{lat.toFixed(4)}, {lng.toFixed(4)}</span>
+                  <div className="pt-2 border-t border-gray-200/60 font-mono text-[10px] text-gray-400 space-y-1 flex flex-col">
+                    <div className="flex justify-between items-baseline">
+                      <span>Delivery Physical Distance:</span>
+                      <span className="font-bold text-brand-green">{distance.toFixed(2)} km</span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span>GPS Map coordinates:</span>
+                      <span className="font-semibold text-brand-orange-hover">{lat.toFixed(4)}, {lng.toFixed(4)}</span>
+                    </div>
                   </div>
                   <div className="text-[10px] text-gray-400 font-mono italic">
                     ★ To customize coordinates, configure inside <strong>My Profile settings page</strong>.
@@ -286,6 +309,13 @@ export default function CartTray({
                 <span>Subtotal amount:</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
+              
+              {serviceMode === 'delivery' && (
+                <div className="flex justify-between text-gray-500">
+                  <span>Delivery Fee ({distance.toFixed(2)} km):</span>
+                  <span>${deliveryFee.toFixed(2)}</span>
+                </div>
+              )}
               
               {loyaltyDiscount > 0 && (
                 <div className="flex justify-between text-[#914c00] font-bold">

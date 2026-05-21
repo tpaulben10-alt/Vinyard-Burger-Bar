@@ -312,7 +312,7 @@ async function startServer() {
   });
 
   app.post("/api/orders/create", (req, res) => {
-    const { userId, items, subtotal, total, paymentMethod, address, lat, lng, redeemPoints } = req.body;
+    const { userId, items, subtotal, deliveryFee, distance, total, paymentMethod, address, lat, lng, redeemPoints } = req.body;
     if (!userId || !items || items.length === 0) {
        res.status(400).json({ error: "Invalid order parameters" });
        return;
@@ -346,6 +346,8 @@ async function startServer() {
       customerName: user.name,
       items,
       subtotal,
+      deliveryFee: deliveryFee !== undefined ? deliveryFee : 0,
+      distance: distance !== undefined ? distance : 0,
       total,
       status: "received",
       createdAt: new Date().toISOString(),

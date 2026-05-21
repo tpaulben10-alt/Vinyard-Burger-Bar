@@ -40,6 +40,8 @@ export interface Order {
   customerName: string;
   items: OrderItem[];
   subtotal: number;
+  deliveryFee?: number;
+  distance?: number;
   total: number;
   status: 'received' | 'preparing' | 'ready' | 'delivering' | 'complete' | 'cancelled';
   createdAt: string;

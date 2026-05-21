@@ -314,6 +314,36 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                   </div>
                 </div>
 
+                {/* Pricing Summary Breakdown */}
+                <div className="bg-zinc-50 border border-gray-200 rounded p-4 font-mono text-xs space-y-1.5 text-left">
+                  <div className="flex justify-between text-gray-500">
+                    <span>Menu Items Subtotal:</span>
+                    <span>${selectedOrder.subtotal.toFixed(2)}</span>
+                  </div>
+                  {selectedOrder.deliveryFee !== undefined && selectedOrder.deliveryFee > 0 && (
+                    <div className="flex justify-between text-gray-500">
+                      <span>Delivery Physical Fee ({selectedOrder.distance?.toFixed(2) || '0.00'} km):</span>
+                      <span>${selectedOrder.deliveryFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {(() => {
+                    const discount = (selectedOrder.subtotal + (selectedOrder.deliveryFee || 0)) - selectedOrder.total;
+                    if (discount > 0.01) {
+                      return (
+                        <div className="flex justify-between text-[#914c00] font-bold">
+                          <span>Loyalty Club Discount:</span>
+                          <span>-${discount.toFixed(2)}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                  <div className="flex justify-between text-sm font-bold text-brand-green pt-2 border-t border-gray-200">
+                    <span>Total Payment Revenue:</span>
+                    <span>${selectedOrder.total.toFixed(2)}</span>
+                  </div>
+                </div>
+
                 {/* Map monitoring pinpoint */}
                 <div className="space-y-2">
                   <span className="text-xs uppercase font-mono font-bold text-gray-400 block">Deliver coordinates radar mapping</span>

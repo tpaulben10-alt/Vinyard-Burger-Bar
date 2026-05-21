@@ -665,12 +665,24 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
                 <span>Subtotal:</span>
                 <span>${activeOrder.subtotal.toFixed(2)}</span>
               </div>
-              {activeOrder.total < activeOrder.subtotal && (
-                <div className="flex justify-between text-brand-orange">
-                  <span>Loyalty Discount:</span>
-                  <span>-${(activeOrder.subtotal - activeOrder.total).toFixed(2)}</span>
+              {activeOrder.deliveryFee !== undefined && activeOrder.deliveryFee > 0 && (
+                <div className="flex justify-between text-gray-500">
+                  <span>Delivery Fee ({activeOrder.distance?.toFixed(2) || '0.00'} km):</span>
+                  <span>${activeOrder.deliveryFee.toFixed(2)}</span>
                 </div>
               )}
+              {(() => {
+                const calculatedDiscount = (activeOrder.subtotal + (activeOrder.deliveryFee || 0)) - activeOrder.total;
+                if (calculatedDiscount > 0.01) {
+                  return (
+                    <div className="flex justify-between text-[#914c00] font-bold">
+                      <span>Loyalty Discount:</span>
+                      <span>-${calculatedDiscount.toFixed(2)}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               <div className="flex justify-between text-sm font-bold text-brand-green pt-1.5 border-t border-gray-100">
                 <span>Payment Amount ({activeOrder.paymentMethod === 'counter' ? 'Counter' : 'COD'}):</span>
                 <span>${activeOrder.total.toFixed(2)}</span>
