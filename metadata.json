@@ -1,0 +1,8 @@
+{
+  "name": "Vinyard Burger Bar",
+  "description": "Order premium crafted burgers, track your delivery with live map integration, earn loyalty points, and manage kitchen queues and registered accounts via the administrative POS terminal.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

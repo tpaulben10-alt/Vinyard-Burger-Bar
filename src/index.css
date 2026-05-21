@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Work+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Libre Caslon Text", Georgia, serif;
+  --font-sans: "Work Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* Vinyard Brand Colors configured for easy access */
+  --color-brand-green: #012d1d;
+  --color-brand-green-hover: #1b4332;
+  --color-brand-orange: #914c00;
+  --color-brand-orange-hover: #ffa457;
+}
+
+/* Base custom definitions */
+body {
+  font-family: var(--font-sans);
+  background-color: #f7f9ff;
+}
+
+/* Custom rustic design patterns */
+.rustic-wood-texture {
+  background-image: radial-gradient(rgba(1, 45, 29, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Floating order tray panel shadow */
+.tray-shadow {
+  box-shadow: -4px 0 24px rgba(1, 45, 29, 0.04);
+}
