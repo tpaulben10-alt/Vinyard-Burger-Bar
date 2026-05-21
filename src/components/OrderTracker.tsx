@@ -294,7 +294,9 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
             You haven't logged any food orders on your account yet. Let's head over to the Cookhouse Catalog and select your burger feast!
           </p>
         </div>
-      ) : activeOrder && (
+      ) : activeOrder && (() => {
+        const isCounterPickup = activeOrder.paymentMethod === 'counter' || activeOrder.address === 'Counter Pick-up';
+        return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Tracker Main Status Board */}
@@ -308,19 +310,19 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
                   <span className="text-4xl font-mono font-black text-white">
                     {activeOrder.status === 'complete' 
                       ? 'Served' 
-                      : activeOrder.paymentMethod === 'counter'
+                      : isCounterPickup
                         ? `~${activePrepMins > 0 ? activePrepMins : 5} Mins`
                         : `~${Math.ceil(calculatedTotalEta)} Mins`
                     }
                   </span>
                   {activeOrder.status !== 'complete' && (
                     <span className="text-xs text-zinc-300 font-sans font-medium">
-                      {activeOrder.paymentMethod === 'counter' ? 'until ready for counter pick-up' : 'remaining until dropoff'}
+                      {isCounterPickup ? 'until ready for counter pick-up' : 'remaining until dropoff'}
                     </span>
                   )}
                 </div>
                 <p className="text-xs text-zinc-300 font-sans text-left">
-                  {activeOrder.paymentMethod === 'counter' ? 'Cookhouse Pick-Up:' : 'Address LockPIN:'} <strong className="text-white">{activeOrder.paymentMethod === 'counter' ? 'Vinyard Restaurant Main Counter' : activeOrder.address}</strong>
+                  {isCounterPickup ? 'Cookhouse Pick-Up:' : 'Address LockPIN:'} <strong className="text-white">{isCounterPickup ? 'Vinyard Restaurant Main Counter' : activeOrder.address}</strong>
                 </p>
               </div>
 
@@ -334,7 +336,7 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
             </div>
 
             {/* Live Routing Traffic Analytics Grid */}
-            {activeOrder.status !== 'complete' && activeOrder.paymentMethod !== 'counter' && (
+            {activeOrder.status !== 'complete' && !isCounterPickup && (
               <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-xs grid grid-cols-1 sm:grid-cols-4 gap-4 text-left animate-fade-in">
                 {/* Visual Header */}
                 <div className="sm:col-span-4 flex items-center justify-between border-b border-gray-150 pb-3">
@@ -637,7 +639,15 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Checkout Type:</span>
-                <span className="uppercase font-bold">{activeOrder.paymentMethod === 'counter' ? 'Counter' : 'At Delivery'}</span>
+                <span className="uppercase font-bold">
+                  {activeOrder.paymentMethod === 'gcash'
+                    ? 'GCash Wallet'
+                    : activeOrder.paymentMethod === 'card'
+                      ? 'Credit Card'
+                      : activeOrder.paymentMethod === 'counter'
+                        ? 'Counter Pickup'
+                        : 'COD Delivery'}
+                </span>
               </div>
             </div>
 
@@ -646,7 +656,7 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
                 <div key={id} className="text-xs space-y-1">
                   <div className="flex justify-between font-serif font-black text-brand-green">
                     <span>{item.qty}x {item.name}</span>
-                    <span className="font-mono text-xs text-gray-500">${(item.price * item.qty).toFixed(2)}</span>
+                    <span className="font-mono text-xs text-gray-500">₱{(item.price * item.qty).toFixed(2)}</span>
                   </div>
                   {item.customizations && (
                     <div className="pl-4 font-mono text-[10px] text-gray-400 space-y-0.5">
@@ -663,12 +673,12 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
             <div className="border-t border-gray-200 pt-4 space-y-1.5 font-mono text-xs">
               <div className="flex justify-between text-gray-400">
                 <span>Subtotal:</span>
-                <span>${activeOrder.subtotal.toFixed(2)}</span>
+                <span>₱{activeOrder.subtotal.toFixed(2)}</span>
               </div>
               {activeOrder.deliveryFee !== undefined && activeOrder.deliveryFee > 0 && (
                 <div className="flex justify-between text-gray-500">
                   <span>Delivery Fee ({activeOrder.distance?.toFixed(2) || '0.00'} km):</span>
-                  <span>${activeOrder.deliveryFee.toFixed(2)}</span>
+                  <span>₱{activeOrder.deliveryFee.toFixed(2)}</span>
                 </div>
               )}
               {(() => {
@@ -677,15 +687,25 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
                   return (
                     <div className="flex justify-between text-[#914c00] font-bold">
                       <span>Loyalty Discount:</span>
-                      <span>-${calculatedDiscount.toFixed(2)}</span>
+                      <span>-₱{calculatedDiscount.toFixed(2)}</span>
                     </div>
                   );
                 }
                 return null;
               })()}
               <div className="flex justify-between text-sm font-bold text-brand-green pt-1.5 border-t border-gray-100">
-                <span>Payment Amount ({activeOrder.paymentMethod === 'counter' ? 'Counter' : 'COD'}):</span>
-                <span>${activeOrder.total.toFixed(2)}</span>
+                <span>
+                  Payment Amount ({
+                    activeOrder.paymentMethod === 'gcash'
+                      ? 'GCash'
+                      : activeOrder.paymentMethod === 'card'
+                        ? 'Credit Card'
+                        : activeOrder.paymentMethod === 'counter'
+                          ? 'Counter'
+                          : 'COD'
+                  }):
+                </span>
+                <span>₱{activeOrder.total.toFixed(2)}</span>
               </div>
             </div>
 
@@ -695,7 +715,8 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
           </div>
 
         </div>
-      )}
+        );
+      })()}
 
     </div>
   );

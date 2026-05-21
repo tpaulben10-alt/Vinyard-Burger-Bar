@@ -14,56 +14,522 @@ interface DBStore {
 }
 
 const INITIAL_MENU: MenuItem[] = [
+  // === BURGERS ===
   {
-    id: "vinyard-classic",
-    name: "The Vinyard Classic",
-    description: "Double beef patty, aged cheddar, butter lettuce, heirloom tomato, and our signature Vinyard sauce on a potato bun.",
-    price: 14.50,
+    id: "burger-classic",
+    name: "Vinyard Classic Burger",
+    description: "Home-made pure beef patty topped with cheddar cheese sauce, fresh lettuce, onions, and our signature Vinyard burger sauce.",
+    price: 175.00,
     category: "burgers",
-    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuC0O_m-FBiO5weZPAwzib9ekLQVPNj0zovabFu70uBmxIxAr0cmep4NUIygouLjOK-UeTXwMqglMWAni46FjsJTVDwPVkZEtK6I-fQA8POXAyBH8Hxjjx3JRqf-VP1KoOHCEVuIdUCT6fq8YaxsohEWQC6KUrL-qizokDA17YaS4EQYuvNlWwxMD7HGzSeOyK0J7ptoa-YADK2uEuFp69mD_qCmv61TavAJBqVXSMwMRGzMuz4sUTnElEzX19udF5YDQKGMyVkxSF8",
-    signature: true
-  },
-  {
-    id: "smokehouse-bbq",
-    name: "Smokehouse BBQ",
-    description: "Smoked bacon, crispy onion strings, sharp provolone, and hickory BBQ sauce. A local favorite since 2020.",
-    price: 16.00,
-    category: "burgers",
-    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDix3J03byQ6JqTySDIhFwnbc7rgYPweYbckmcrvS7YGsBi6f-rxPvT8QLExpOTJ47CrVuCN5jfr5-zu-l8t_91zuT5n2Fwx50rKF-hTAszkyP5WROMF3XoJ0dVobbykGyIxTEjBPUjBz3dYjUS3oWkcb059CbTpxS-KO86oxwsl8dHlyWnaOVIC8o9MoMFhnoaeVG7rBRhuTb27PIRLOzPlUANMJqrgkzp2vOz49n4Vn3wf4nyIEXwaeYCSsDmZREqGRmYYQZ2ij4",
-    signature: true
-  },
-  {
-    id: "potato-wedges",
-    name: "Hand-Cut Potato Wedges",
-    description: "Twice-fried for ultimate crunch, tossed in sea salt and rosemary. Served with house garlic aioli.",
-    price: 6.50,
-    category: "sides",
-    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCYd3oATjvt4ezB1nh7tivxj1IaauAHCn_axy8Si8J_xBvgcDqWlf86vLk2H-9vx0vNxxGDQT3-ZCkJXc4JZqDNoroSy5lCeogEmVzYJcj5iwVWwpDphLvMyHCOMioGeMkY4o_783PjwXQm_ym19H74FAW7Dj1CJ6nmqrr0_FR0YqT2Y8XdU3SB3QxZW4xU2LM0BhjZI1NUcV3gVI42WerOHa4q_BdGiokgorNvtwLy22DvDJiC6fggcHIubYcGlji7ztfBo7cQRmU",
+    imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80",
     bestSeller: true
   },
   {
-    id: "classic-fries",
-    name: "Classic Fries",
-    description: "Thin, salted French fries in a simple paper wrap, seasoned with sea salt.",
-    price: 4.50,
+    id: "burger-cheese",
+    name: "Vinyard Cheese Burger",
+    description: "Home-made pure beef patty topped with sliced cheese & cheddar cheese sauce, caramelized onions, fresh lettuce, fresh tomato and our signature Vinyard burger sauce.",
+    price: 185.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1571066811602-71683a3f680d?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "burger-chefs-choice",
+    name: "Chef's Choice Burger",
+    description: "Home-made pure beef patty topped with bacon, sliced cheese, onions, fresh lettuce, fresh tomato, and our signature Vinyard sauce.",
+    price: 215.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "burger-double-cc",
+    name: "Double CC Burger",
+    description: "Double home-made beef patties topped with bacon, sliced cheese, onions, fresh lettuce, fresh tomato, and our signature Vinyard sauce.",
+    price: 295.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1586190848861-99aa4a171e90?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "burger-bacon-bbq",
+    name: "Bacon BBQ Burger",
+    description: "Home-made beef patty topped with bacon, sliced cheese, fresh lettuce, fresh tomato, onions, garlic aioli, and BBQ sauce.",
+    price: 215.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1594212699903-ec8a3cee50f6?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "burger-blt",
+    name: "BLT Burger",
+    description: "Home-made beef patty loaded with bacon, sliced cheese & cheddar sauce, fresh lettuce, fresh tomato, and our signature Vinyard sauce.",
+    price: 215.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1521305916504-4a1121188589?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "burger-double-blt",
+    name: "Double BLT Burger",
+    description: "Double home-made beef patty loaded with bacon, sliced cheese & cheddar sauce, fresh lettuce, fresh tomato, and our signature Vinyard sauce.",
+    price: 295.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "burger-hawaiian-bbq",
+    name: "Hawaiian BBQ Burger",
+    description: "Home-made beef patty topped with sweet pineapple, sliced cheese, fresh tomato, caramelized onions, lettuce, garlic aioli, and BBQ sauce.",
+    price: 185.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1582196016295-f8c894d37922?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "burger-titan-ultimate",
+    name: "Titan Ultimate Burger",
+    description: "Triple layer home-made beef patties loaded with 3 cheese slices, bacon, cheddar cheese sauce, caramelized onions, fresh lettuce, tomato, and our signature Vinyard sauce.",
+    price: 379.00,
+    category: "burgers",
+    imageUrl: "https://images.unsplash.com/photo-1603060262583-f3e37f4e76b3?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+
+  // === PASTA ===
+  {
+    id: "pasta-carbonara",
+    name: "Classic Spaghetti Carbonara",
+    description: "Creamy classic spaghetti carbonara served with poached egg and garlic bread.",
+    price: 195.00,
+    category: "pasta",
+    imageUrl: "https://images.unsplash.com/photo-1612874742237-6526221588e3?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "pasta-asian-chicken",
+    name: "Asian Chicken Pasta",
+    description: "Sweet and spicy Asian-style pasta with tender chicken and mushrooms, served with garlic bread.",
+    price: 185.00,
+    category: "pasta",
+    imageUrl: "https://images.unsplash.com/photo-1546548970-71785318a17b?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "pasta-pinoy-spaghetti",
+    name: "Pinoy Style Spaghetti",
+    description: "Sweet-style Filipino spaghetti topped with hotdogs and grated cheese, served with garlic bread.",
+    price: 175.00,
+    category: "pasta",
+    imageUrl: "https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "pasta-fettuccine-bolognese",
+    name: "Fettuccine Bolognese",
+    description: "Fettuccine pasta in rich savory Bolognese sauce, topped with parmesan cheese and basil oil, served with garlic bread.",
+    price: 195.00,
+    category: "pasta",
+    imageUrl: "https://images.unsplash.com/photo-1598866594230-a7e1910bc31b?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "pasta-chicken-alfredo",
+    name: "Fettuccine Chicken Alfredo",
+    description: "Fettuccine pasta in creamy Alfredo sauce with chicken tenders, served with garlic bread.",
+    price: 185.00,
+    category: "pasta",
+    imageUrl: "https://images.unsplash.com/photo-1645112411341-6c4fd023714a?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "pasta-ham-mushroom",
+    name: "Creamy Ham & Mushroom Fettuccine",
+    description: "Fettuccine pasta in creamy parmesan sauce with ham and mushrooms, served with garlic bread.",
+    price: 185.00,
+    category: "pasta",
+    imageUrl: "https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb?w=600&auto=format&fit=crop&q=80"
+  },
+
+  // === SIDES / APPETIZERS ===
+  {
+    id: "sides-french-fries-solo",
+    name: "Classic French Fries (Solo)",
+    description: "Golden crispy fries, perfectly spiced, served with tomato ketchup dip. Solo portion.",
+    price: 85.00,
     category: "sides",
-    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCwIncme2DszRpa6PY5Rc8ayv32QfCOSDWXB8T9rvFhlCwAAv3kxr6DljgvWE_ZwapPeWv8kGl_qzHZf5e1qQgIyWveGS1iHey1hPRSJceM7AOTf9-pDh59AXrSdvgAb-iM3QJlPFlmBuXUbwhiZcHYbjW-jlGWMxhmF6Iet_Sduyp1o_VMDzXNY3ObaUV7WTNN8oV8txug8J6aMOoD0Wi5YlT8OdqqZbfZHa3YTaOUoEOr3ifIApG-uMIR2Bl1VP4PravBSjL6nhg",
+    imageUrl: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop&q=80"
   },
   {
-    id: "fried-ice-cream",
-    name: "Fried Ice Cream",
-    description: "Vanilla bean center with a crispy cinnamon-sugar coating. The legendary finale.",
-    price: 8.00,
-    category: "treats",
-    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuDiMaKDN398gIRMSJkuMhi7UgNVhByh9gy_VlX4abEZdcceIBra7jlx4mQqpGpkTHZMZcB3PxzBVfXXcbaFzPsMqehz1RkLTUMy63BqNJMr3GZic_uuBwSUgzOgvTLC2rcPxQI3KKOm9zM2MiOP_A-SHAkQZ7UBoF7WdYlRXzBieWilHA8HT8PiSMXjf_-hUPI9MKY40SFfQHPa7yaMtcUJH3GVzD3ZYTv5nGvwucCSN3sQIaAcPBSRAW1Q9qntwgZCU8GFwJVVVks",
+    id: "sides-french-fries-sharing",
+    name: "Classic French Fries (Sharing)",
+    description: "Golden crispy fries, perfectly spiced, served with tomato ketchup dip. Sharing portion.",
+    price: 165.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=600&auto=format&fit=crop&q=80"
   },
   {
-    id: "craft-shakes",
-    name: "Craft Shakes",
-    description: "Real cream, spun fresh. Choose from Chocolate, Vanilla, or Strawberry.",
-    price: 7.50,
-    category: "treats",
-    imageUrl: "https://lh3.googleusercontent.com/aida-public/AB6AXuCQNLa7gn0SEtBWY9bgvn9zz7zXq6L2pIJzaugVuAWWlcA-RLZj4CTOj98V1QVi9MLlKEVrGmw9YsA-ZkKQVY8r7m3YBt_FU_t3auwgo6rXmMbAjDVM1TCbIXpyHXHyCtmF3oX6hkRFrql1zXfL4INY7bcWMjXF31ziLdIJCeUqvr0mq17XSKPDgmHss9TLNUDrTi07qudAWNpIL1ZsAypMj3o4e2lVEIDCM1cKTcPLFPdyRZ-lqdve9NVynBMJfJ6aPBZ_0cfpIa4",
+    id: "sides-cheese-fries-solo",
+    name: "Cheese Fries (Solo)",
+    description: "Crispy fries topped with creamy cheddar cheese sauce, served with BBQ dip. Solo portion.",
+    price: 95.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "sides-cheese-fries-sharing",
+    name: "Cheese Fries (Sharing)",
+    description: "Crispy fries topped with creamy cheddar cheese sauce, served with BBQ dip. Sharing portion.",
+    price: 185.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1600957137473-c1a1e225e7e3?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "sides-mozzarella-solo",
+    name: "Mozzarella Sticks (Solo)",
+    description: "Creamy mozzarella coated in herbed breadcrumbs, crispy golden, served with BBQ dip. Solo portion.",
+    price: 145.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1531749668029-2db88e4b76ce?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "sides-mozzarella-sharing",
+    name: "Mozzarella Sticks (Sharing)",
+    description: "Creamy mozzarella coated in herbed breadcrumbs, crispy golden, served with BBQ dip. Sharing portion.",
+    price: 285.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1531749668029-2db88e4b76ce?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "sides-nacho-fries",
+    name: "Nacho Fries",
+    description: "Crispy fries loaded with mango salsa, chilli con carne, sour cream and cheddar cheese sauce. Sharing portion.",
+    price: 249.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1513456852971-30c0b81c9d23?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "sides-pulled-pork-fries",
+    name: "Pulled Pork BBQ Fries",
+    description: "Crispy fries topped with tender BBQ pulled pork, finished with lemon garlic aioli. Sharing portion.",
+    price: 249.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1585109649139-366815a0d713?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "sides-wedges-garlic-parm",
+    name: "Garlic Parmesan Wedges",
+    description: "Homemade potato wedges tossed with garlic oil, parmesan cheese and fried garlic, served with lemon garlic aioli.",
+    price: 175.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "sides-wedges-vinyard",
+    name: "Vinyard Style Potato Wedges",
+    description: "Homemade potato wedges topped with parmesan cheese, bacon bits and our signature Vinyard sauce.",
+    price: 195.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "sides-wedges-salted-egg",
+    name: "Spicy Salted Egg Wedges",
+    description: "Homemade potato wedges coated in rich spicy salted egg, served with creamy sour cream.",
+    price: 185.00,
+    category: "sides",
+    imageUrl: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&auto=format&fit=crop&q=80"
+  },
+
+  // === RICE MEALS ===
+  {
+    id: "rice-burger-steak",
+    name: "Sizzling Burger Steak with Egg",
+    description: "Homemade beef patties smothered in rich mushroom gravy, served hot with rice.",
+    price: 145.00,
+    category: "rice-meals",
+    imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "rice-luncheon-meat",
+    name: "Sizzling Luncheon Meat with Egg",
+    description: "Three slices of savory luncheon meat with sunny side-up egg, drizzled with teriyaki sauce, served hot with rice.",
+    price: 125.00,
+    category: "rice-meals",
+    imageUrl: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "rice-pulled-pork",
+    name: "Pulled Pork BBQ with Egg",
+    description: "Savory BBQ pulled pork with sunny side up egg, served hot with rice.",
+    price: 145.00,
+    category: "rice-meals",
+    imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "rice-pork-belly",
+    name: "Smoked BBQ Pork Belly",
+    description: "Savory smoked BBQ pork belly, served hot with rice.",
+    price: 185.00,
+    category: "rice-meals",
+    imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "rice-hungarian-sausage",
+    name: "Sizzling Hungarian Sausage with Egg",
+    description: "Juicy Hungarian sausage with sunny side up egg and gravy, served hot with rice.",
+    price: 125.00,
+    category: "rice-meals",
+    imageUrl: "https://images.unsplash.com/photo-1532242718418-1712608277e5?w=600&auto=format&fit=crop&q=80"
+  },
+
+  // === FLAVORED CHICKEN ===
+  {
+    id: "chicken-3pcs",
+    name: "Flavored Fried Chicken (3 Pieces)",
+    description: "3 Pieces of Flavored Fried Chicken. Choose flavor: Classic, Garlic Parmesan, Ranch BBQ, Sweet Chilli, or Spicy Sriracha Mayo.",
+    price: 175.00,
+    category: "chicken",
+    imageUrl: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "chicken-6pcs",
+    name: "Flavored Fried Chicken (6 Pieces)",
+    description: "6 Pieces of Flavored Fried Chicken. Choose flavor: Classic, Garlic Parmesan, Ranch BBQ, Sweet Chilli, or Spicy Sriracha Mayo.",
+    price: 350.00,
+    category: "chicken",
+    imageUrl: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "chicken-9pcs",
+    name: "Flavored Fried Chicken (9 Pieces)",
+    description: "9 Pieces of Flavored Fried Chicken. Choose flavor: Classic, Garlic Parmesan, Ranch BBQ, Sweet Chilli, or Spicy Sriracha Mayo.",
+    price: 515.00,
+    category: "chicken",
+    imageUrl: "https://images.unsplash.com/photo-1569058242253-92a9c755a0ec?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "chicken-meal-solo",
+    name: "Flavored Chicken w/ drinks (Solo)",
+    description: "Served with Rice or Fries and cold drink. Choose flavor: Classic, Garlic Parmesan, Ranch BBQ, Sweet Chilli, or Spicy Sriracha Mayo.",
+    price: 165.00,
+    category: "chicken",
+    imageUrl: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "chicken-meal-double",
+    name: "Flavored Chicken w/ drinks (Double)",
+    description: "Served with Rice or Fries and cold drink. Double portion. Choose flavor: Classic, Garlic Parmesan, Ranch BBQ, Sweet Chilli, or Spicy Sriracha Mayo.",
+    price: 310.00,
+    category: "chicken",
+    imageUrl: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "chicken-meal-family",
+    name: "Flavored Chicken w/ drinks (Family)",
+    description: "Served with Rice or Fries and cold drink. Family serving. Choose flavor: Classic, Garlic Parmesan, Ranch BBQ, Sweet Chilli, or Spicy Sriracha Mayo.",
+    price: 485.00,
+    category: "chicken",
+    imageUrl: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+
+  // === DRINKS & COFFEE ===
+  {
+    id: "drink-vanilla-cold-brew-12oz",
+    name: "Vanilla Cold Brew (12oz)",
+    description: "Premium Arabica bean cold brew with sweet vanilla syrup, 12oz size.",
+    price: 85.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-vanilla-cold-brew-16oz",
+    name: "Vanilla Cold Brew (16oz)",
+    description: "Premium Arabica bean cold brew with sweet vanilla syrup, 16oz size.",
+    price: 95.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "drink-coffee-latte-12oz",
+    name: "Iced Coffee Latte (12oz)",
+    description: "Premium Arabica espresso with chilled milk over ice, 12oz size.",
+    price: 109.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-coffee-latte-16oz",
+    name: "Iced Coffee Latte (16oz)",
+    description: "Premium Arabica espresso with chilled milk over ice, 16oz size.",
+    price: 119.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-spanish-latte-12oz",
+    name: "Iced Spanish Latte (12oz)",
+    description: "Sweetened Spanish style espresso latte with a velvety finish over ice, 12oz size.",
+    price: 115.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-spanish-latte-16oz",
+    name: "Iced Spanish Latte (16oz)",
+    description: "Sweetened Spanish style espresso latte with a velvety finish over ice, 16oz size.",
+    price: 125.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-caramel-macchiato-12oz",
+    name: "Iced Caramel Macchiato (12oz)",
+    description: "Espresso combined with vanilla-flavored syrup, milk, and caramel drizzle over ice, 12oz size.",
+    price: 125.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80",
+    signature: true
+  },
+  {
+    id: "drink-caramel-macchiato-16oz",
+    name: "Iced Caramel Macchiato (16oz)",
+    description: "Espresso combined with vanilla-flavored syrup, milk, and caramel drizzle over ice, 16oz size.",
+    price: 135.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-iced-mocha-12oz",
+    name: "Iced Mocha (12oz)",
+    description: "Espresso with rich chocolate sauce and milk over ice, 12oz size.",
+    price: 145.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-iced-mocha-16oz",
+    name: "Iced Mocha (16oz)",
+    description: "Espresso with rich chocolate sauce and milk over ice, 16oz size.",
+    price: 155.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-vanilla-frappe-12oz",
+    name: "Vanilla Frappe (12oz)",
+    description: "Blended vanilla frappe with whipped cream, 12oz size.",
+    price: 125.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-vanilla-frappe-16oz",
+    name: "Vanilla Frappe (16oz)",
+    description: "Blended vanilla frappe with whipped cream, 16oz size.",
+    price: 135.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-caramel-frappe-12oz",
+    name: "Caramel Frappe (12oz)",
+    description: "Blended caramel frappe with whipped cream, 12oz size.",
+    price: 160.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-caramel-frappe-16oz",
+    name: "Caramel Frappe (16oz)",
+    description: "Blended caramel frappe with whipped cream, 16oz size.",
+    price: 170.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "drink-chocolate-frappe-12oz",
+    name: "Chocolate Frappe (12oz)",
+    description: "Rich blended chocolate frappe with whipped cream, 12oz size.",
+    price: 165.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-chocolate-frappe-16oz",
+    name: "Chocolate Frappe (16oz)",
+    description: "Rich blended chocolate frappe with whipped cream, 16oz size.",
+    price: 175.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-mocha-frappe-12oz",
+    name: "Mocha Frappe (12oz)",
+    description: "Blended coffee-chocolate frappe with whipped cream, 12oz size.",
+    price: 175.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-mocha-frappe-16oz",
+    name: "Mocha Frappe (16oz)",
+    description: "Blended coffee-chocolate frappe with whipped cream, 16oz size.",
+    price: 185.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-mango-shake-16oz",
+    name: "Mango Shake (16oz)",
+    description: "Creamy blended fresh mango shake, 16oz size.",
+    price: 105.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop&q=80",
+    bestSeller: true
+  },
+  {
+    id: "drink-strawberry-shake-16oz",
+    name: "Strawberry Shake (16oz)",
+    description: "Creamy blended sweet strawberry shake, 16oz size.",
+    price: 105.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1553530666-ba11a7da3888?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-coke",
+    name: "Coke",
+    description: "Chilled refreshing Coca-Cola can.",
+    price: 35.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-sprite",
+    name: "Sprite",
+    description: "Chilled refreshing Sprite lemon-lime soda can.",
+    price: 35.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1625772291427-39f21d374e85?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-lemon-iced-tea",
+    name: "Lemon Iced Tea",
+    description: "Chilled sweet lemon iced tea.",
+    price: 35.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&auto=format&fit=crop&q=80"
+  },
+  {
+    id: "drink-mineral-water",
+    name: "Mineral Water",
+    description: "Refreshing bottled mineral water.",
+    price: 25.00,
+    category: "drinks",
+    imageUrl: "https://images.unsplash.com/photo-1523362628745-0c100150b504?w=600&auto=format&fit=crop&q=80"
   }
 ];
 
@@ -130,11 +596,12 @@ function readDB(): DBStore {
         userId: "customer-1",
         customerName: "Angelo Dimaculangan",
         items: [
-          { menuItemId: "vinyard-classic", name: "The Vinyard Classic", price: 14.50, qty: 1, customizations: { pattyDone: "Medium" } },
-          { menuItemId: "potato-wedges", name: "Hand-Cut Potato Wedges", price: 6.50, qty: 1, customizations: {} }
+          { menuItemId: "burger-classic", name: "Vinyard Classic Burger", price: 175.00, qty: 1, customizations: { pattyDone: "Medium" } },
+          { menuItemId: "sides-cheese-fries-sharing", name: "Cheese Fries (Sharing)", price: 185.00, qty: 1, customizations: {} }
         ],
-        subtotal: 21.00,
-        total: 21.00,
+        subtotal: 360.00,
+        deliveryFee: 45.00,
+        total: 405.00,
         status: "preparing",
         createdAt: "2026-05-21T06:30:00Z",
         estimatedMinutes: 20,
@@ -330,8 +797,8 @@ async function startServer() {
       user.loyaltyPoints = Math.max(0, user.loyaltyPoints - redeemPoints);
     }
 
-    // Earn point calculations (10 points per dollar spent)
-    const earned = Math.floor(total * 10);
+    // Earn point calculations (1 point for every ₱10 spent)
+    const earned = Math.floor(total / 10);
     user.loyaltyPoints += earned;
 
     const orderId = "VY-" + Math.floor(10000 + Math.random() * 90000);
@@ -352,7 +819,7 @@ async function startServer() {
       status: "received",
       createdAt: new Date().toISOString(),
       estimatedMinutes,
-      paymentMethod: paymentMethod === "counter" ? "counter" : "delivery",
+      paymentMethod: ["counter", "gcash", "card"].includes(paymentMethod) ? paymentMethod : "delivery",
       address: address || user.address || "Catmonan St., Poblacion , Hinunangan, Philippines",
       lat: lat !== undefined ? lat : user.lat || 10.3971559,
       lng: lng !== undefined ? lng : user.lng || 125.1983495

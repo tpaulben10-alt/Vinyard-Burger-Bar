@@ -131,10 +131,10 @@ export default function UserProfile({ currentUser, onProfileUpdate }: UserProfil
 
             <div className="border-t border-brand-orange/20 pt-4 space-y-2 relative z-10 text-xs leading-relaxed text-zinc-600">
               <p>
-                Estimated Value: <strong className="text-brand-orange font-mono">${(currentUser.loyaltyPoints / 100).toFixed(2)} USD</strong>
+                Estimated Value: <strong className="text-brand-orange font-mono">₱{(currentUser.loyaltyPoints).toFixed(2)}</strong>
               </p>
               <p>
-                Every dollar checkout awards <strong>10 points</strong>. Redeem credits instantly as dynamic discounts during checkout!
+                Every ₱10 checkout awards <strong>1 point</strong>. Redeem credits instantly as dynamic discounts during checkout!
               </p>
             </div>
           </div>

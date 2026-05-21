@@ -15,7 +15,7 @@ export interface MenuItem {
   name: string;
   description: string;
   price: number;
-  category: 'burgers' | 'sides' | 'treats';
+  category: 'burgers' | 'pasta' | 'sides' | 'rice-meals' | 'chicken' | 'drinks';
   imageUrl: string;
   bestSeller?: boolean;
   signature?: boolean;
@@ -46,7 +46,7 @@ export interface Order {
   status: 'received' | 'preparing' | 'ready' | 'delivering' | 'complete' | 'cancelled';
   createdAt: string;
   estimatedMinutes: number;
-  paymentMethod: 'delivery' | 'counter';
+  paymentMethod: 'delivery' | 'counter' | 'gcash' | 'card';
   address?: string;
   lat?: number;
   lng?: number;

@@ -84,7 +84,7 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
           <div>
             <h3 className="font-serif text-xl sm:text-2xl font-bold text-brand-green">Vinyard Loyalty Club</h3>
             <p className="text-sm text-gray-500 max-w-md mt-1">
-              Earn <span className="font-bold text-brand-orange font-mono">10 points for every dollar spent</span>. Accumulate points and redeem discounts on subsequent orders. Double boost for online checkouts!
+              Earn <span className="font-bold text-brand-orange font-mono">1 point for every ₱10 spent</span>. Accumulate points and redeem discounts on subsequent orders. Double boost for online checkouts!
             </p>
           </div>
         </div>
@@ -114,8 +114,8 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col sm:flex-row group lg:h-60">
             <div className="sm:w-5/12 h-44 sm:h-auto overflow-hidden relative">
               <img 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0O_m-FBiO5weZPAwzib9ekLQVPNj0zovabFu70uBmxIxAr0cmep4NUIygouLjOK-UeTXwMqglMWAni46FjsJTVDwPVkZEtK6I-fQA8POXAyBH8Hxjjx3JRqf-VP1KoOHCEVuIdUCT6fq8YaxsohEWQC6KUrL-qizokDA17YaS4EQYuvNlWwxMD7HGzSeOyK0J7ptoa-YADK2uEuFp69mD_qCmv61TavAJBqVXSMwMRGzMuz4sUTnElEzX19udF5YDQKGMyVkxSF8" 
-                alt="The Vinyard Classic"
+                src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=80" 
+                alt="Vinyard Classic Burger"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                 referrerPolicy="no-referrer"
               />
@@ -126,15 +126,15 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
             <div className="p-6 sm:w-7/12 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="font-serif text-lg font-bold text-brand-green">The Vinyard Classic</h3>
-                  <span className="font-mono text-sm font-bold text-brand-orange">$14.50</span>
+                  <h3 className="font-serif text-lg font-bold text-brand-green">Vinyard Classic Burger</h3>
+                  <span className="font-mono text-sm font-bold text-brand-orange">₱175.00</span>
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed font-sans">
-                  Our centerpiece smash. Double premium beef patties, aged cheddar, lettuce, organic tomato, and special burger vinaigrette on a soft potato roll.
+                  Home-made pure beef patty topped with cheddar cheese sauce, fresh lettuce, onions, and our signature Vinyard burger sauce.
                 </p>
               </div>
               <button 
-                onClick={() => onFeaturedClick('vinyard-classic')}
+                onClick={() => onFeaturedClick('burger-classic')}
                 className="mt-4 w-full py-2 border border-brand-green/15 text-brand-green hover:bg-brand-green hover:text-white rounded text-xs font-serif font-bold transition-all cursor-pointer"
               >
                 SELECT & CUSTOMIZE
@@ -146,8 +146,8 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all flex flex-col sm:flex-row group lg:h-60">
             <div className="sm:w-5/12 h-44 sm:h-auto overflow-hidden relative">
               <img 
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDix3J03byQ6JqTySDIhFwnbc7rgYPweYbckmcrvS7YGsBi6f-rxPvT8QLExpOTJ47CrVuCN5jfr5-zu-l8t_91zuT5n2Fwx50rKF-hTAszkyP5WROMF3XoJ0dVobbykGyIxTEjBPUjBz3dYjUS3oWkcb059CbTpxS-KO86oxwsl8dHlyWnaOVIC8o9MoMFhnoaeVG7rBRhuTb27PIRLOzPlUANMJqrgkzp2vOz49n4Vn3wf4nyIEXwaeYCSsDmZREqGRmYYQZ2ij4" 
-                alt="Smokehouse BBQ"
+                src="https://images.unsplash.com/photo-1571066811602-71683a3f680d?w=600&auto=format&fit=crop&q=80" 
+                alt="Vinyard Cheese Burger"
                 className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
                 referrerPolicy="no-referrer"
               />
@@ -158,15 +158,15 @@ export default function HomeHero({ onOrderClick, onFeaturedClick }: HomeHeroProp
             <div className="p-6 sm:w-7/12 flex flex-col justify-between">
               <div className="space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <h3 className="font-serif text-lg font-bold text-brand-green">Smokehouse BBQ</h3>
-                  <span className="font-mono text-sm font-bold text-brand-orange">$16.00</span>
+                  <h3 className="font-serif text-lg font-bold text-brand-green">Vinyard Cheese Burger</h3>
+                  <span className="font-mono text-sm font-bold text-brand-orange">₱185.00</span>
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed font-sans">
-                  Crisptastic local bacon, golden onion strings, heavy provolone cheese, and genuine hickory BBQ glaze. Smoky and sweet.
+                  Home-made pure beef patty topped with sliced cheese & cheddar cheese sauce, caramelized onions, fresh lettuce, fresh tomato and our signature Vinyard burger sauce.
                 </p>
               </div>
               <button 
-                onClick={() => onFeaturedClick('smokehouse-bbq')}
+                onClick={() => onFeaturedClick('burger-cheese')}
                 className="mt-4 w-full py-2 border border-brand-green/15 text-brand-green hover:bg-brand-green hover:text-white rounded text-xs font-serif font-bold transition-all cursor-pointer"
               >
                 SELECT & CUSTOMIZE

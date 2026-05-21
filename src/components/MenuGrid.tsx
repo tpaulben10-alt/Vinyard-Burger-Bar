@@ -16,7 +16,7 @@ export default function MenuGrid({
   availableLoyaltyPoints
 }: MenuGridProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [activeCategory, setActiveCategory] = useState<'all' | 'burgers' | 'sides' | 'treats'>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'burgers' | 'pasta' | 'sides' | 'rice-meals' | 'chicken' | 'drinks'>('all');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   
   // Customization fields
@@ -112,19 +112,30 @@ export default function MenuGrid({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {['all', 'burgers', 'sides', 'treats'].map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat as any)}
-              className={`px-5 py-2 rounded text-xs uppercase font-mono tracking-wider font-bold transition-all border cursor-pointer ${
-                activeCategory === cat
-                  ? 'bg-brand-green border-brand-green text-white shadow-md'
-                  : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
-              }`}
-            >
-              {cat === 'all' ? 'All Items' : cat}
-            </button>
-          ))}
+          {['all', 'burgers', 'pasta', 'sides', 'rice-meals', 'chicken', 'drinks'].map(cat => {
+            const labels: Record<string, string> = {
+              all: 'All Items 📋',
+              burgers: 'Burgers 🍔',
+              pasta: 'Pasta & Noodles 🍝',
+              sides: 'Sides & Appetizers 🍟',
+              'rice-meals': 'Sizzling Meals 🍛',
+              chicken: 'Flavored Chicken 🍗',
+              drinks: 'Drinks & Coffee ☕'
+            };
+            return (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat as any)}
+                className={`px-4 py-2 rounded text-xs uppercase font-mono tracking-wider font-bold transition-all border cursor-pointer ${
+                  activeCategory === cat
+                    ? 'bg-brand-green border-brand-green text-white shadow-md'
+                    : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                }`}
+              >
+                {labels[cat] || cat}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -163,7 +174,7 @@ export default function MenuGrid({
                     {item.name}
                   </h3>
                   <span className="font-mono text-base font-bold text-brand-orange shrink-0">
-                    ${item.price.toFixed(2)}
+                    ₱{item.price.toFixed(2)}
                   </span>
                 </div>
                 <p className="text-gray-500 text-xs sm:text-xs leading-relaxed font-sans line-clamp-3">
@@ -176,7 +187,7 @@ export default function MenuGrid({
                 <div className="flex items-center justify-between text-[10px] font-mono border-t border-gray-100 pt-3 text-gray-400">
                   <span className="flex items-center gap-1">
                     <Award className="w-3.5 h-3.5 text-brand-orange" />
-                    <span>+{Math.floor(item.price * 10)} Loy Points</span>
+                    <span>+{Math.floor(item.price / 10)} PTS</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
@@ -237,7 +248,7 @@ export default function MenuGrid({
                     </button>
                   </div>
                   <div className="text-xs text-gray-400 font-mono">
-                    Total Portion: <span className="text-brand-orange font-bold">${(selectedItem.price * qty).toFixed(2)}</span>
+                    Total Portion: <span className="text-brand-orange font-bold">₱{(selectedItem.price * qty).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -310,7 +321,7 @@ export default function MenuGrid({
             <div className="p-6 bg-zinc-50 border-t border-gray-200 flex items-center justify-between gap-4">
               <div className="font-mono">
                 <span className="block text-[10px] text-gray-400 font-bold uppercase">Estimated Earn</span>
-                <span className="text-xs text-brand-green font-bold">⭐ {Math.floor(selectedItem.price * qty * 10)} Loyalty Points</span>
+                <span className="text-xs text-brand-green font-bold">⭐ {Math.floor(selectedItem.price * qty / 10)} Loyalty PTS</span>
               </div>
 
               <div className="flex gap-2">
@@ -325,7 +336,7 @@ export default function MenuGrid({
                   className="px-5 py-2.5 bg-brand-orange hover:bg-brand-orange-hover text-white rounded font-serif font-bold text-xs transition uppercase shadow flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Add To Tray</span>
-                  <span className="font-mono text-[11px] font-black bg-white/20 px-1.5 py-0.5 rounded">${(selectedItem.price * qty).toFixed(2)}</span>
+                  <span className="font-mono text-[11px] font-black bg-white/20 px-1.5 py-0.5 rounded">₱{(selectedItem.price * qty).toFixed(2)}</span>
                 </button>
               </div>
             </div>

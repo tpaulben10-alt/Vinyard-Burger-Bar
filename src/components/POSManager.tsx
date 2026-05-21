@@ -126,7 +126,7 @@ export default function POSManager({ currentUser }: POSManagerProps) {
           </div>
           <div className="bg-white border border-gray-200 py-2.5 px-4 rounded shadow-sm text-center col-span-2 sm:col-span-1">
             <span className="block text-[10px] font-mono text-gray-400 font-bold uppercase">Net POS Sales</span>
-            <span className="text-lg font-mono font-bold text-brand-green">${totalRevenue.toFixed(2)}</span>
+            <span className="text-lg font-mono font-bold text-brand-green">₱{totalRevenue.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -213,7 +213,15 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                         <div className="space-y-0.5">
                           <p className="font-serif text-xs font-bold text-brand-green">{order.customerName}</p>
                           <p className="text-[10px] text-gray-400 font-mono tracking-wide">
-                            {itemsCount} items • ${order.total.toFixed(2)} ({order.paymentMethod === 'counter' ? 'Counter' : 'COD'})
+                            {itemsCount} items • ₱{order.total.toFixed(2)} ({
+                              order.paymentMethod === 'counter' 
+                                ? 'Counter/Cash' 
+                                : order.paymentMethod === 'gcash' 
+                                  ? 'GCash' 
+                                  : order.paymentMethod === 'card' 
+                                    ? 'Card' 
+                                    : 'COD'
+                            })
                           </p>
                         </div>
 
@@ -282,7 +290,23 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-gray-100">
                   <div className="space-y-1 font-mono text-xs">
                     <p className="text-gray-400">Checkout Mode:</p>
-                    <p className="font-bold text-brand-green uppercase">{selectedOrder.paymentMethod === 'counter' ? 'Pickup at Counter' : 'COD Delivery'}</p>
+                    <p className="font-bold text-brand-green uppercase">
+                      {selectedOrder.address === 'Counter Pick-up'
+                        ? `Counter Pickup (${
+                            selectedOrder.paymentMethod === 'gcash'
+                              ? 'GCash'
+                              : selectedOrder.paymentMethod === 'card'
+                                ? 'Card'
+                                : 'Cash'
+                          })`
+                        : `${
+                            selectedOrder.paymentMethod === 'gcash'
+                              ? 'GCash Wallet'
+                              : selectedOrder.paymentMethod === 'card'
+                                ? 'Credit Card'
+                                : 'COD'
+                          } Delivery`}
+                    </p>
                   </div>
 
                   <div className="space-y-1 font-mono text-xs text-right sm:text-left">
@@ -299,7 +323,7 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                       <div key={idx} className="text-xs pt-3 first:pt-0">
                         <div className="flex justify-between font-serif font-black text-brand-green">
                           <span>{item.qty}x {item.name}</span>
-                          <span className="font-mono text-gray-500">${(item.price * item.qty).toFixed(2)}</span>
+                          <span className="font-mono text-gray-500">₱{(item.price * item.qty).toFixed(2)}</span>
                         </div>
                         {item.customizations && (
                           <div className="pl-4 font-mono text-[10px] text-gray-400 mt-1 space-y-0.5">
@@ -318,12 +342,12 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                 <div className="bg-zinc-50 border border-gray-200 rounded p-4 font-mono text-xs space-y-1.5 text-left">
                   <div className="flex justify-between text-gray-500">
                     <span>Menu Items Subtotal:</span>
-                    <span>${selectedOrder.subtotal.toFixed(2)}</span>
+                    <span>₱{selectedOrder.subtotal.toFixed(2)}</span>
                   </div>
                   {selectedOrder.deliveryFee !== undefined && selectedOrder.deliveryFee > 0 && (
                     <div className="flex justify-between text-gray-500">
                       <span>Delivery Physical Fee ({selectedOrder.distance?.toFixed(2) || '0.00'} km):</span>
-                      <span>${selectedOrder.deliveryFee.toFixed(2)}</span>
+                      <span>₱{selectedOrder.deliveryFee.toFixed(2)}</span>
                     </div>
                   )}
                   {(() => {
@@ -332,7 +356,7 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                       return (
                         <div className="flex justify-between text-[#914c00] font-bold">
                           <span>Loyalty Club Discount:</span>
-                          <span>-${discount.toFixed(2)}</span>
+                          <span>-₱{discount.toFixed(2)}</span>
                         </div>
                       );
                     }
@@ -340,7 +364,7 @@ export default function POSManager({ currentUser }: POSManagerProps) {
                   })()}
                   <div className="flex justify-between text-sm font-bold text-brand-green pt-2 border-t border-gray-200">
                     <span>Total Payment Revenue:</span>
-                    <span>${selectedOrder.total.toFixed(2)}</span>
+                    <span>₱{selectedOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
 

@@ -93,8 +93,8 @@ export default function Navbar({
             {currentUser && currentUser.role === 'customer' && (
               <div 
                 onClick={() => setScreen('profile')}
-                className="flex items-center gap-1.5 bg-amber-500/15 text-brand-orange-hover border border-brand-orange/30 px-3 py-1.5 rounded-full font-mono text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
-                title="Your Loyalty points balance. Tap to redeem or earn 10 points per dollar!"
+                className="flex items-center gap-1.5 bg-amber-500/15 text-[#ffa457] border border-[#ffa457]/35 px-3 py-1.5 rounded-full font-mono text-xs font-bold hover:bg-amber-500/25 transition cursor-pointer"
+                title="Your Loyalty points balance. Tap to redeem or earn 1 point per ₱10!"
               >
                 <Award className="w-4 h-4 text-brand-orange-hover fill-brand-orange" />
                 <span>⭐ {currentUser.loyaltyPoints} PTS</span>
