@@ -6,13 +6,14 @@ import MenuGrid from './components/MenuGrid';
 import UserProfile from './components/UserProfile';
 import OrderTracker from './components/OrderTracker';
 import POSManager from './components/POSManager';
+import AdminDashboard from './components/AdminDashboard';
 import SecurityPortal from './components/SecurityPortal';
 import CartTray from './components/CartTray';
 import { Smartphone, Mail, Globe, MapPin, Smile } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [activeScreen, setActiveScreen] = useState<'home' | 'menu' | 'track' | 'admin' | 'profile'>('home');
+  const [activeScreen, setActiveScreen] = useState<'home' | 'menu' | 'track' | 'admin' | 'analytics' | 'profile'>('home');
   const [cartItems, setCartItems] = useState<OrderItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -247,6 +248,10 @@ export default function App() {
           <POSManager 
             currentUser={currentUser} 
           />
+        )}
+
+        {activeScreen === 'analytics' && currentUser && (
+          <AdminDashboard />
         )}
       </main>
 

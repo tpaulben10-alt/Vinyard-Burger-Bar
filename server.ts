@@ -930,6 +930,46 @@ async function startServer() {
   });
 
   // Orders Handling
+  
+  app.get("/api/admin/analytics", async (req, res) => {
+    try {
+      // 1. Total Revenue Today
+      const [revData] = await getPool().query(`
+        SELECT SUM(total) as revenue 
+        FROM orders 
+        WHERE status = 'complete' 
+        AND DATE(createdAt) = CURDATE()
+      `) as any[];
+      const totalRevenueToday = revData[0]?.revenue || 0;
+
+      // 2. Popular items (GROUP BY menuItemId)
+      const [itemsData] = await getPool().query(`
+        SELECT name, SUM(qty) as totalSold
+        FROM order_items
+        GROUP BY menuItemId
+        ORDER BY totalSold DESC
+        LIMIT 5
+      `) as any[];
+
+      // 3. Active Delivery Queues
+      const [activeData] = await getPool().query(`
+        SELECT COUNT(*) as activeCount
+        FROM orders
+        WHERE status NOT IN ('complete', 'cancelled')
+      `) as any[];
+      const activeDeliveryQueues = activeData[0]?.activeCount || 0;
+
+      res.json({
+        totalRevenueToday,
+        popularItems: itemsData,
+        activeDeliveryQueues
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error fetching analytics" });
+    }
+  });
+
   app.get("/api/orders", async (req, res) => {
     const userId = req.query.userId as string;
     try {

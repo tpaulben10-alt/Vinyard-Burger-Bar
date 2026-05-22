@@ -11,14 +11,17 @@ export default function AnimatedHQMarker({ position, title }: AnimatedHQMarkerPr
   return (
     <AdvancedMarker position={position} title={title}>
       <motion.div
+        initial={{ y: -50, opacity: 0 }}
         animate={{ 
           y: [0, -6, 0],
-          scale: [1, 1.05, 1]
+          scale: [1, 1.05, 1],
+          opacity: 1
         }}
         transition={{
           duration: 2.5,
           repeat: Infinity,
-          ease: "easeInOut"
+          ease: "easeInOut",
+          delay: 0.2
         }}
         style={{ originY: 'bottom' }} 
       >
@@ -32,7 +35,8 @@ export default function AnimatedHQMarker({ position, title }: AnimatedHQMarkerPr
            transition={{
              duration: 2.5,
              repeat: Infinity,
-             ease: "easeOut"
+             ease: "easeOut",
+             delay: 0.2
            }}
            style={{ zIndex: -1 }}
          />

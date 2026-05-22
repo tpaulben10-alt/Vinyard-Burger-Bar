@@ -1,14 +1,106 @@
 import React, { useState, useEffect } from 'react';
 import { Order, OrderItem, User } from '../types';
-import { MapPin, Award, UserCheck, Edit3, Check, Globe, RefreshCcw, Landmark, Maximize2, Minimize2, History, ShoppingBag, ArrowRight, Clock, ExternalLink, Printer, Filter } from 'lucide-react';
+import { MapPin, Award, UserCheck, Edit3, Check, Globe, RefreshCcw, Landmark, Maximize2, Minimize2, History, ShoppingBag, ArrowRight, Clock, ExternalLink, Printer, Filter, ChevronDown, Inbox, ChefHat, Truck, CheckCircle, XCircle, Star } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import { motion, AnimatePresence } from 'motion/react';
 import AnimatedHQMarker from './AnimatedHQMarker';
+import FeedbackForm from './FeedbackForm';
+import OrderStatusTimeline from './OrderStatusTimeline';
 
 interface UserProfileProps {
   currentUser: User;
   onProfileUpdate: (updatedUser: User) => void;
   onReorder: (items: OrderItem[]) => void;
   onTrackOrder: (orderId: string) => void;
+}
+
+const statusOptions = [
+  { value: 'all', label: 'ALL ORDERS', icon: null },
+  { value: 'received', label: 'RECEIVED', icon: Inbox },
+  { value: 'preparing', label: 'PREPARING', icon: ChefHat },
+  { value: 'delivering', label: 'DELIVERING', icon: Truck },
+  { value: 'complete', label: 'COMPLETE', icon: CheckCircle },
+  { value: 'cancelled', label: 'CANCELLED', icon: XCircle },
+];
+
+const sortOptions = [
+  { value: 'date', label: 'DATE ORDERED' },
+  { value: 'amount', label: 'TOTAL AMOUNT' },
+  { value: 'status', label: 'ORDER STATUS' },
+];
+
+function CustomDropdown({ 
+  value, 
+  onChange, 
+  options, 
+  label, 
+  icon: PropIcon 
+}: { 
+  value: string, 
+  onChange: (val: string) => void, 
+  options: {value: string, label: string, icon?: any}[], 
+  label: string,
+  icon?: any
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(o => o.value === value);
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2">
+        {label && <span className="text-[10px] font-mono text-gray-400 uppercase font-bold whitespace-nowrap">{label}</span>}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center justify-between gap-2 px-3 py-1.5 bg-white border border-gray-200 rounded text-xs font-mono font-bold text-gray-600 hover:border-brand-orange transition-all min-w-[140px]"
+        >
+          <div className="flex items-center gap-1.5">
+            {PropIcon && <PropIcon className="w-3.5 h-3.5 text-gray-400" />}
+            <span className="truncate">{selectedOption?.label}</span>
+          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              className="absolute left-0 sm:right-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden min-w-full sm:min-w-[180px]"
+            >
+              <div className="py-1">
+                {options.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      onChange(opt.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-xs font-mono font-bold transition-colors flex items-center justify-between gap-2 ${
+                      value === opt.value 
+                        ? 'bg-brand-orange/5 text-brand-orange' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                       {opt.icon && <opt.icon className="w-3.5 h-3.5" />}
+                       {opt.label}
+                    </div>
+                    {value === opt.value && <Check className="w-3 h-3" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
 
 const MAPS_API_KEY =
@@ -30,9 +122,20 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [lastPrintedTimestamps, setLastPrintedTimestamps] = useState<Record<string, string>>({});
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const handlePrint = (order: Order) => {
     setOrderToPrint(order);
+    
+    // Update last printed timestamp
+    setLastPrintedTimestamps(prev => ({
+      ...prev,
+      [order.id]: new Date().toISOString()
+    }));
+
     // Wait for the DOM element to be rendered before triggering print
     setTimeout(() => {
       window.print();
@@ -127,10 +230,22 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
 
   const hqCoords = { lat: 10.3971559, lng: 125.1983495 };
 
-  const filteredOrders = orderHistory.filter(order => {
-    if (statusFilter === 'all') return true;
-    return order.status === statusFilter;
-  });
+  const sortedAndFilteredOrders = orderHistory
+    .filter(order => {
+      if (statusFilter === 'all') return true;
+      return order.status === statusFilter;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'date') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === 'amount') {
+        comparison = a.total - b.total;
+      } else if (sortBy === 'status') {
+        comparison = a.status.localeCompare(b.status);
+      }
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
 
   // Helper to fit map bounds to multiple coordinates with movement threshold and zoom constraints
   function MapAutoFit({ locations }: { locations: google.maps.LatLngLiteral[] }) {
@@ -450,24 +565,33 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
               <History className="w-5 h-5 text-brand-orange" /> My Order History
             </h2>
             <span className="text-xs font-mono font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
-              {filteredOrders.length} {statusFilter !== 'all' ? statusFilter.toUpperCase() : ''} RECORDS
+              {sortedAndFilteredOrders.length} {statusFilter !== 'all' ? statusFilter.toUpperCase() : ''} RECORDS
             </span>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select 
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="text-xs font-mono font-bold bg-white border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange text-gray-600 appearance-none cursor-pointer pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px_10px] bg-[right_0.75rem_center] bg-no-repeat"
+          
+          <div className="flex flex-wrap items-center gap-4">
+            <CustomDropdown
+              label="Sort By:"
+              value={sortBy}
+              onChange={setSortBy}
+              options={sortOptions}
+            />
+            
+            <button 
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors self-end sm:self-auto"
+              title={`Order: ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
             >
-              <option value="all">ALL ORDERS</option>
-              <option value="received">RECEIVED</option>
-              <option value="preparing">PREPARING</option>
-              <option value="delivering">DELIVERING</option>
-              <option value="complete">COMPLETE</option>
-              <option value="cancelled">CANCELLED</option>
-            </select>
+              <RefreshCcw className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-500 ${sortOrder === 'asc' ? 'rotate-180' : ''}`} />
+            </button>
+  
+            <CustomDropdown
+              label="Filter:"
+              icon={Filter}
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={statusOptions}
+            />
           </div>
         </div>
 
@@ -477,7 +601,7 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
               <RefreshCcw className="w-8 h-8 animate-spin opacity-20" />
               <p className="font-mono text-xs uppercase tracking-widest">Retrieving ledger...</p>
             </div>
-          ) : filteredOrders.length === 0 ? (
+          ) : sortedAndFilteredOrders.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
                 <ShoppingBag className="w-8 h-8 text-gray-200" />
@@ -492,82 +616,156 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
               </div>
             </div>
           ) : (
-            filteredOrders.map((order) => (
-              <div key={order.id} className="p-6 transition-colors hover:bg-gray-50/30 group">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start gap-4">
-                    <div className={`mt-1 w-10 h-10 rounded-lg flex items-center justify-center border ${
-                      order.status === 'complete' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
-                      order.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-500' :
-                      'bg-brand-orange/5 border-brand-orange/10 text-brand-orange'
-                    }`}>
-                      <ShoppingBag className="w-5 h-5" />
-                    </div>
-                    
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-sm font-bold text-brand-green">#{order.id}</span>
-                        <div className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full border ${
-                          order.status === 'complete' ? 'bg-emerald-100 border-emerald-200 text-emerald-700' :
-                          order.status === 'cancelled' ? 'bg-red-100 border-red-200 text-red-700' :
-                          order.status === 'preparing' ? 'bg-amber-100 border-amber-200 text-amber-700' :
-                          order.status === 'delivering' ? 'bg-blue-100 border-blue-200 text-blue-700' :
-                          'bg-gray-100 border-gray-200 text-gray-600'
-                        }`}>
-                          {order.status}
+            sortedAndFilteredOrders.map((order) => (
+              <div key={order.id} className="transition-colors hover:bg-gray-50/10 group">
+                <div 
+                  className="p-6 cursor-pointer select-none"
+                  onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className={`mt-1 w-10 h-10 rounded-lg flex items-center justify-center border transition-transform group-hover:scale-110 ${
+                        order.status === 'complete' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                        order.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-500' :
+                        'bg-brand-orange/5 border-brand-orange/10 text-brand-orange'
+                      }`}>
+                        <ShoppingBag className="w-5 h-5" />
+                      </div>
+                      
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-sm font-bold text-brand-green">#{order.id}</span>
+                          
+                          <OrderStatusTimeline 
+                            status={order.status} 
+                            createdAt={order.createdAt} 
+                            estimatedMinutes={order.estimatedMinutes} 
+                          />
+
+                          <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
+                            <Clock className="w-3 h-3" /> {new Date(order.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <ChevronDown className={`w-4 h-4 text-gray-300 transition-transform duration-300 ml-auto sm:ml-0 ${expandedOrderId === order.id ? 'rotate-180' : ''}`} />
                         </div>
-                        <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
-                          <Clock className="w-3 h-3" /> {new Date(order.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      
-                      <p className="text-xs text-gray-500 line-clamp-1">
-                        {order.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
-                      </p>
-                      
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-mono font-black text-brand-green">₱{order.total.toFixed(2)}</span>
-                        <span className="text-[10px] text-gray-400 font-mono italic">{order.paymentMethod.toUpperCase()}</span>
+                        
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-mono font-black text-brand-green">₱{order.total.toFixed(2)}</span>
+                          <span className="text-[10px] text-gray-400 font-mono italic">{order.paymentMethod.toUpperCase()}</span>
+                          {lastPrintedTimestamps[order.id] && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-gray-100 text-[9px] font-mono text-gray-500 animate-in fade-in slide-in-from-left-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse" />
+                              LAST PRINTED: {new Date(lastPrintedTimestamps[order.id]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {/* Print Button */}
-                    <button
-                      onClick={() => handlePrint(order)}
-                      className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-lg border border-gray-200 transition-all active:scale-95 group/print"
-                      title="Print Receipt"
-                    >
-                      <Printer className="w-4 h-4 group-hover/print:text-brand-orange" />
-                    </button>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      {/* Print Button */}
+                      <button
+                        onClick={() => handlePrint(order)}
+                        className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-lg border border-gray-200 transition-all active:scale-95 group/print"
+                        title="Print Receipt"
+                      >
+                        <Printer className="w-4 h-4 group-hover/print:text-brand-orange" />
+                      </button>
 
-                    {/* Re-order button */}
-                    <button
-                      onClick={() => onReorder(order.items)}
-                      className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
-                    >
-                      <RefreshCcw className="w-3.5 h-3.5" /> Repeat Order
-                    </button>
-                    
-                    {/* Track/View button */}
-                    {order.status !== 'complete' && order.status !== 'cancelled' ? (
+                      {/* Re-order button */}
                       <button
-                        onClick={() => onTrackOrder(order.id)}
-                        className="px-4 py-2 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+                        onClick={() => onReorder(order.items)}
+                        className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" /> Track Now
+                        <RefreshCcw className="w-3.5 h-3.5" /> Repeat Order
                       </button>
-                    ) : (
-                      <button
-                        disabled
-                        className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-1.5 opacity-50 cursor-not-allowed"
-                      >
-                        Archived
-                      </button>
-                    )}
+                      
+                      {/* Track/View button */}
+                      {order.status !== 'complete' && order.status !== 'cancelled' ? (
+                        <button
+                          onClick={() => onTrackOrder(order.id)}
+                          className="px-4 py-2 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" /> Track Now
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-1.5 opacity-50 cursor-not-allowed"
+                        >
+                          Archived
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                <AnimatePresence>
+                  {expandedOrderId === order.id && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: 'easeInOut' }}
+                      className="overflow-hidden bg-gray-50/50"
+                    >
+                      <div className="px-6 pb-6 pt-2 border-t border-gray-100">
+                        <div className="space-y-4">
+                          <h4 className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                            <div className="w-1 h-1 bg-brand-orange rounded-full" /> Detailed Item Breakdown
+                          </h4>
+                          <div className="space-y-3">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="flex justify-between items-start text-xs border-b border-gray-100/50 pb-2 last:border-0 last:pb-0">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-black text-brand-green w-6 h-6 rounded bg-brand-green/5 flex items-center justify-center text-[10px]">{item.qty}x</span>
+                                    <span className="font-bold text-gray-700">{item.name}</span>
+                                  </div>
+                                  {item.customizations && Object.entries(item.customizations).length > 0 && (
+                                    <div className="ml-8 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                                      {Object.entries(item.customizations).map(([key, val]) => (
+                                        <div key={key} className="flex items-center gap-1.5">
+                                          <span className="text-[9px] font-mono text-gray-400 uppercase">{key}:</span>
+                                          <span className="text-[10px] font-medium text-gray-600">{val as string}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <span className="font-mono font-bold text-brand-green">₱{(item.price * item.qty).toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {order.status === 'complete' && !(order as any).rating && (
+                            <FeedbackForm orderId={order.id} />
+                          )}
+
+                          <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-gray-200">
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-mono text-gray-400 uppercase block">Delivery Address</span>
+                              <p className="text-xs text-gray-600 font-medium">{address}</p>
+                            </div>
+                            <div className="text-right space-y-1">
+                              <div className="flex justify-between text-[10px] font-mono text-gray-400 uppercase">
+                                <span>Subtotal</span>
+                                <span>₱{order.subtotal.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-[10px] font-mono text-gray-400 uppercase">
+                                <span>Delivery</span>
+                                <span>₱{order.deliveryFee.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-xs font-mono font-black text-brand-green border-t border-gray-200 pt-1 mt-1">
+                                <span>Total</span>
+                                <span>₱{order.total.toFixed(2)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))
           )}
@@ -578,6 +776,14 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
       {orderToPrint && (
         <div id="print-receipt" className="hidden print:block p-8 bg-white font-mono text-sm max-w-[80mm] mx-auto border border-dashed border-gray-300">
           <div className="text-center space-y-2 mb-6">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/src/assets/images/burger_receipt_logo_1779429465772.png" 
+                alt="Vinyard Burger Bar Receipt Logo" 
+                className="w-16 h-16 object-contain grayscale contrast-200"
+                referrerPolicy="no-referrer"
+              />
+            </div>
             <h1 className="font-serif text-xl font-bold uppercase">Vinyard Burger Bar</h1>
             <p className="text-[10px]">Hinunangan, Southern Leyte</p>
             <p className="text-[10px]">EST. 2020</p>
@@ -615,8 +821,8 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
           <div className="space-y-1 mb-6">
             <p className="flex justify-between"><span>SUBTOTAL:</span> <span>₱{orderToPrint.subtotal.toFixed(2)}</span></p>
             <p className="flex justify-between"><span>DELIVERY FEE:</span> <span>₱{orderToPrint.deliveryFee.toFixed(2)}</span></p>
-            <p className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
-              <span>TOTAL:</span> 
+            <p className="flex justify-between font-bold text-lg pt-2 border-t-2 border-black mt-4">
+              <span>GRAND TOTAL:</span> 
               <span>₱{orderToPrint.total.toFixed(2)}</span>
             </p>
           </div>
@@ -625,7 +831,14 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
             <p className="text-[10px]">Thank you for your patronage!</p>
             <p className="text-[10px]">Freshness. Quality. Vinyard.</p>
             <div className="mt-4 flex justify-center">
-              <div className="w-24 h-4 bg-black"></div> {/* Mock barcode */}
+              <QRCodeSVG 
+                value={JSON.stringify({ 
+                  orderId: orderToPrint.id, 
+                  total: orderToPrint.total,
+                  items: orderToPrint.items.map(i => ({ name: i.name, qty: i.qty }))
+                })}
+                size={80}
+              />
             </div>
           </div>
         </div>

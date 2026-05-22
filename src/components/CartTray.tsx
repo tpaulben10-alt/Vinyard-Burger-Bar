@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { OrderItem, User } from '../types';
-import { X, Trash2, Plus, Minus, CreditCard, Landmark, Truck, UserPlus, Gift, AlertCircle, Smartphone, Wallet, QrCode, Clock } from 'lucide-react';
+import { X, Trash2, Plus, Minus, CreditCard, Landmark, Truck, UserPlus, Gift, AlertCircle, Smartphone, Wallet, QrCode, Clock, Heart } from 'lucide-react';
 
 interface CartTrayProps {
   currentUser: User | null;
@@ -215,8 +215,19 @@ export default function CartTray({
                       <p className="text-xs font-mono text-brand-orange font-bold mt-0.5">₱{item.price.toFixed(2)} each</p>
                     </div>
 
-                    {/* Quantities adjuster */}
                     <div className="flex items-center border border-gray-200 rounded shrink-0 bg-zinc-50">
+                      <button
+                        onClick={() => {
+                          const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+                          favorites.push(item);
+                          localStorage.setItem('favorites', JSON.stringify(favorites));
+                          alert('Added to favorites!');
+                        }}
+                        className="p-1 hover:bg-gray-100 text-gray-400 hover:text-brand-orange transition"
+                        title="Add to Favorites"
+                      >
+                        <Heart className="w-3.5 h-3.5" />
+                      </button>
                       <button 
                         onClick={() => onUpdateQty(item.menuItemId, item.qty - 1)}
                         className="p-1 hover:bg-gray-100 text-gray-500 transition"

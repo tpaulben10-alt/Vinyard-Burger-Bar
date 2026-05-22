@@ -16,7 +16,7 @@ export default function MenuGrid({
   availableLoyaltyPoints
 }: MenuGridProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [activeCategory, setActiveCategory] = useState<'all' | 'popular' | 'new-arrival' | 'burgers' | 'pasta' | 'sides' | 'rice-meals' | 'chicken' | 'drinks' | string>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'popular' | 'new-arrival' | 'favorites' | 'burgers' | 'pasta' | 'sides' | 'rice-meals' | 'chicken' | 'drinks' | string>('all');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   
   // Real sales statistics from historical orders Database
@@ -128,6 +128,20 @@ export default function MenuGrid({
     return item.category === activeCategory;
   });
 
+  const displayItems = activeCategory === 'favorites' 
+    ? (JSON.parse(localStorage.getItem('favorites') || '[]') as OrderItem[]).map(fav => ({
+      ...menuItems.find(mi => mi.id === fav.menuItemId) || { 
+        id: fav.menuItemId,
+        name: fav.name, 
+        price: fav.price, 
+        category: 'burgers', 
+        imageUrl: '/src/assets/images/vinyard_storefront_1779375096734.png',
+        description: 'Previously customized favorite item.'
+      },
+      ...fav
+    }))
+    : filteredItems;
+
   return (
     <div className="space-y-8 pb-12 relative">
       
@@ -147,11 +161,12 @@ export default function MenuGrid({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {['all', 'popular', 'new-arrival', 'burgers', 'pasta', 'sides', 'rice-meals', 'chicken', 'drinks'].map(cat => {
+          {['all', 'popular', 'new-arrival', 'favorites', 'burgers', 'pasta', 'sides', 'rice-meals', 'chicken', 'drinks'].map(cat => {
             const labels: Record<string, string> = {
               all: 'All Items 📋',
               popular: 'Popular 🔥',
               'new-arrival': 'New & Fresh ✨',
+              favorites: 'Favorites ❤️',
               burgers: 'Burgers 🍔',
               pasta: 'Pasta & Noodles 🍝',
               sides: 'Sides & Appetizers 🍟',
@@ -178,7 +193,7 @@ export default function MenuGrid({
 
       {/* Menu Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredItems.map(item => (
+        {displayItems.map(item => (
           <div 
             key={item.id}
             className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col justify-between group h-full"

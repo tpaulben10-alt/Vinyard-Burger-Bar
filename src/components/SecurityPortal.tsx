@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../types';
-import { Mail, Lock, User as UserIcon, LogIn, ArrowRight, CheckCircle } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, LogIn, ArrowRight, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import VinyardLogo from './VinyardLogo';
 
 interface SecurityPortalProps {
@@ -12,6 +12,7 @@ export default function SecurityPortal({ onLoginSuccess, onClose }: SecurityPort
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'customer' | 'admin'>('customer');
   const [isLoading, setIsLoading] = useState(false);
@@ -191,17 +192,24 @@ export default function SecurityPortal({ onLoginSuccess, onClose }: SecurityPort
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <label className="text-xs font-mono font-bold text-gray-500 uppercase tracking-widest block flex items-center gap-1">
                 <Lock className="w-3.5 h-3.5 text-brand-orange" /> Password
               </label>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password (e.g. customer / admin)"
                 className="w-full h-12 px-4 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-orange text-sm"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-9 text-gray-400 hover:text-brand-orange"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
             <button
@@ -241,17 +249,24 @@ export default function SecurityPortal({ onLoginSuccess, onClose }: SecurityPort
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 relative">
               <label className="text-xs font-mono font-bold text-gray-500 uppercase tracking-widest block flex items-center gap-1">
                 <Lock className="w-3.5 h-3.5 text-brand-orange" /> Create Password
               </label>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 5 characters"
                 className="w-full h-11 px-4 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-orange text-sm"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-8 text-gray-400 hover:text-brand-orange"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
             <div className="space-y-1.5">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Order, User, Feedback } from '../types';
 import { Truck, CheckCircle, Clock, Star, Gift, ShoppingBag, ShieldAlert, Navigation2, FileText, Send, Check, RefreshCcw, Maximize2, Minimize2 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import AnimatedHQMarker from './AnimatedHQMarker';
 
@@ -191,10 +192,32 @@ function RecenterControl({ locations }: { locations: google.maps.LatLngLiteral[]
   );
 }
 
+function TrafficComponent({ show }: { show: boolean }) {
+  const map = useMap();
+  const trafficLayer = React.useRef<google.maps.TrafficLayer | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (show) {
+      if (!trafficLayer.current) {
+        trafficLayer.current = new google.maps.TrafficLayer();
+      }
+      trafficLayer.current.setMap(map);
+    } else {
+      if (trafficLayer.current) {
+        trafficLayer.current.setMap(null);
+      }
+    }
+  }, [map, show]);
+
+  return null;
+}
+
 export default function OrderTracker({ currentUser, onRefreshUser, trackOrderId, clearTrackOrderId }: OrderTrackerProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showTraffic, setShowTraffic] = useState(false);
   
   // Rating states
   const [rating, setRating] = useState(5);
@@ -764,7 +787,11 @@ export default function OrderTracker({ currentUser, onRefreshUser, trackOrderId,
                 <span className="font-mono text-[10px] text-gray-400 uppercase">Target: Hinunangan Grid</span>
               </div>
 
-              <div className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[100] bg-white rounded-none border-none' : 'h-[280px] bg-zinc-100 rounded overflow-hidden relative border border-gray-200'}`}>
+              <div 
+                role="img"
+                aria-label="Delivery tracking map showing real-time delivery route"
+                className={`transition-all duration-300 ${isFullscreen ? 'fixed inset-0 z-[100] bg-white rounded-none border-none' : 'h-[280px] bg-zinc-100 rounded overflow-hidden relative border border-gray-200'}`}
+              >
                 {isMapKeyConfigured ? (
                   <APIProvider apiKey={MAPS_API_KEY} version="weekly">
                     <Map
@@ -779,8 +806,17 @@ export default function OrderTracker({ currentUser, onRefreshUser, trackOrderId,
 
                       {/* Customer target marker */}
                       <AdvancedMarker position={destCoords} title="My Delivery Location">
-                        <Pin background="#ffa457" borderColor="#914c00" glyphColor="#ffffff" />
+                        <motion.div
+                          initial={{ y: -50, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ duration: 0.5, delay: 0.5, type: 'spring' }}
+                        >
+                          <Pin background="#ffa457" borderColor="#914c00" glyphColor="#ffffff" />
+                        </motion.div>
                       </AdvancedMarker>
+
+                      {/* Render Traffic Layer */}
+                      <TrafficComponent show={showTraffic} />
 
                       {/* Render Routing connector path */}
                       <RouteRouteDisplay 
@@ -795,11 +831,29 @@ export default function OrderTracker({ currentUser, onRefreshUser, trackOrderId,
                       {/* Manual Recenter Control */}
                       <RecenterControl locations={[hqCoords, destCoords]} />
 
+                      {/* Traffic Toggle */}
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowTraffic(!showTraffic);
+                        }}
+                        className={`absolute top-4 right-16 z-40 bg-white/90 backdrop-blur-sm hover:bg-white p-2.5 rounded-lg shadow-xl border border-gray-200 transition-all flex items-center justify-center hover:scale-110 active:scale-95 ${showTraffic ? 'text-brand-orange' : 'text-brand-green'}`}
+                        title={showTraffic ? "Hide Traffic" : "Show Traffic"}
+                      >
+                        <Navigation2 className="w-5 h-5" />
+                      </button>
+
                       {/* Fullscreen Toggle */}
                       <button 
-                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsFullscreen(!isFullscreen);
+                        }}
                         className="absolute top-4 right-4 z-40 bg-white/90 backdrop-blur-sm hover:bg-white text-brand-green p-2.5 rounded-lg shadow-xl border border-gray-200 transition-all flex items-center justify-center hover:scale-110 active:scale-95 group/fullscreen"
                         title={isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+                        aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                       >
                         {isFullscreen ? (
                           <Minimize2 className="w-5 h-5 text-brand-orange" />
