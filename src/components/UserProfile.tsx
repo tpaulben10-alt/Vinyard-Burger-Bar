@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { User } from '../types';
-import { MapPin, Award, UserCheck, Edit3, Check, Globe, RefreshCcw, Landmark, Maximize2, Minimize2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Order, OrderItem, User } from '../types';
+import { MapPin, Award, UserCheck, Edit3, Check, Globe, RefreshCcw, Landmark, Maximize2, Minimize2, History, ShoppingBag, ArrowRight, Clock, ExternalLink } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import AnimatedHQMarker from './AnimatedHQMarker';
 
 interface UserProfileProps {
   currentUser: User;
   onProfileUpdate: (updatedUser: User) => void;
+  onReorder: (items: OrderItem[]) => void;
+  onTrackOrder: (orderId: string) => void;
 }
 
 const MAPS_API_KEY =
@@ -16,7 +18,7 @@ const MAPS_API_KEY =
 
 const isMapKeyConfigured = Boolean(MAPS_API_KEY) && MAPS_API_KEY !== 'YOUR_API_KEY';
 
-export default function UserProfile({ currentUser, onProfileUpdate }: UserProfileProps) {
+export default function UserProfile({ currentUser, onProfileUpdate, onReorder, onTrackOrder }: UserProfileProps) {
   const [name, setName] = useState(currentUser.name);
   const [address, setAddress] = useState(currentUser.address || '');
   const [lat, setLat] = useState(currentUser.lat || 10.3971559);
@@ -26,6 +28,31 @@ export default function UserProfile({ currentUser, onProfileUpdate }: UserProfil
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Order history states
+  const [orderHistory, setOrderHistory] = useState<Order[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch(`/api/orders?userId=${currentUser.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          // Sort by date descending
+          setOrderHistory(data.sort((a: Order, b: Order) => 
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          ));
+        }
+      } catch (e) {
+        console.error("Failed to fetch order history", e);
+      } finally {
+        setIsLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, [currentUser.id]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,6 +416,107 @@ export default function UserProfile({ currentUser, onProfileUpdate }: UserProfil
           </button>
         </form>
 
+      </div>
+
+      {/* Order History Section */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="font-serif text-xl font-bold text-brand-green flex items-center gap-2">
+            <History className="w-5 h-5 text-brand-orange" /> My Order History
+          </h2>
+          <span className="text-xs font-mono font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
+            {orderHistory.length} TOTAL RECORDS
+          </span>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {isLoadingHistory ? (
+            <div className="p-12 flex flex-col items-center justify-center text-gray-400 space-y-3">
+              <RefreshCcw className="w-8 h-8 animate-spin opacity-20" />
+              <p className="font-mono text-xs uppercase tracking-widest">Retrieving ledger...</p>
+            </div>
+          ) : orderHistory.length === 0 ? (
+            <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+                <ShoppingBag className="w-8 h-8 text-gray-200" />
+              </div>
+              <div className="max-w-xs">
+                <h4 className="font-serif text-lg font-bold text-gray-400">No Orders Yet</h4>
+                <p className="text-sm text-gray-400 mt-1">Visit our menu to place your first Vinyard Burger Bar order!</p>
+              </div>
+            </div>
+          ) : (
+            orderHistory.map((order) => (
+              <div key={order.id} className="p-6 transition-colors hover:bg-gray-50/30 group">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-start gap-4">
+                    <div className={`mt-1 w-10 h-10 rounded-lg flex items-center justify-center border ${
+                      order.status === 'complete' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                      order.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-500' :
+                      'bg-brand-orange/5 border-brand-orange/10 text-brand-orange'
+                    }`}>
+                      <ShoppingBag className="w-5 h-5" />
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-sm font-bold text-brand-green">#{order.id}</span>
+                        <div className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full border ${
+                          order.status === 'complete' ? 'bg-emerald-100 border-emerald-200 text-emerald-700' :
+                          order.status === 'cancelled' ? 'bg-red-100 border-red-200 text-red-700' :
+                          order.status === 'preparing' ? 'bg-amber-100 border-amber-200 text-amber-700' :
+                          order.status === 'delivering' ? 'bg-blue-100 border-blue-200 text-blue-700' :
+                          'bg-gray-100 border-gray-200 text-gray-600'
+                        }`}>
+                          {order.status}
+                        </div>
+                        <span className="text-[10px] text-gray-400 flex items-center gap-1 font-mono">
+                          <Clock className="w-3 h-3" /> {new Date(order.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      <p className="text-xs text-gray-500 line-clamp-1">
+                        {order.items.map(i => `${i.qty}x ${i.name}`).join(', ')}
+                      </p>
+                      
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-mono font-black text-brand-green">₱{order.total.toFixed(2)}</span>
+                        <span className="text-[10px] text-gray-400 font-mono italic">{order.paymentMethod.toUpperCase()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {/* Re-order button */}
+                    <button
+                      onClick={() => onReorder(order.items)}
+                      className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+                    >
+                      <RefreshCcw className="w-3.5 h-3.5" /> Repeat Order
+                    </button>
+                    
+                    {/* Track/View button */}
+                    {order.status !== 'complete' && order.status !== 'cancelled' ? (
+                      <button
+                        onClick={() => onTrackOrder(order.id)}
+                        className="px-4 py-2 bg-brand-orange hover:bg-brand-orange-hover text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" /> Track Now
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="px-4 py-2 bg-gray-100 text-gray-400 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-1.5 opacity-50 cursor-not-allowed"
+                      >
+                        Archived
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -7,6 +7,8 @@ import AnimatedHQMarker from './AnimatedHQMarker';
 interface OrderTrackerProps {
   currentUser: User | null;
   onRefreshUser: (user: User) => void;
+  trackOrderId?: string | null;
+  clearTrackOrderId?: () => void;
 }
 
 const MAPS_API_KEY =
@@ -189,7 +191,7 @@ function RecenterControl({ locations }: { locations: google.maps.LatLngLiteral[]
   );
 }
 
-export default function OrderTracker({ currentUser, onRefreshUser }: OrderTrackerProps) {
+export default function OrderTracker({ currentUser, onRefreshUser, trackOrderId, clearTrackOrderId }: OrderTrackerProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -258,6 +260,17 @@ export default function OrderTracker({ currentUser, onRefreshUser }: OrderTracke
     const interval = setInterval(fetchOrders, 4000); // Poll every 4 seconds for immediate administrative updates
     return () => clearInterval(interval);
   }, [currentUser, activeOrder?.id]);
+
+  // Handle cross-tab or cross-screen navigation to a specific order
+  useEffect(() => {
+    if (trackOrderId && orders.length > 0) {
+      const target = orders.find(o => o.id === trackOrderId);
+      if (target) {
+        setActiveOrder(target);
+        if (clearTrackOrderId) clearTrackOrderId();
+      }
+    }
+  }, [trackOrderId, orders, clearTrackOrderId]);
 
   const handleSelectOrder = (order: Order) => {
     setActiveOrder(order);

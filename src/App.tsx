@@ -17,6 +17,7 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [quickSelectId, setQuickSelectId] = useState<string | null>(null);
+  const [trackOrderId, setTrackOrderId] = useState<string | null>(null);
 
   // Load session from browser localStorage at start to stay logged in
   useEffect(() => {
@@ -155,6 +156,31 @@ export default function App() {
     setActiveScreen('menu');
   };
 
+  const handleReorder = (items: OrderItem[]) => {
+    // Add all items from the historical order to the current tray
+    const nextCart = [...cartItems];
+    items.forEach(newItem => {
+      const existingIdx = nextCart.findIndex(item => 
+        item.menuItemId === newItem.menuItemId && 
+        JSON.stringify(item.customizations) === JSON.stringify(newItem.customizations)
+      );
+
+      if (existingIdx > -1) {
+        nextCart[existingIdx].qty += newItem.qty;
+      } else {
+        nextCart.push(newItem);
+      }
+    });
+
+    updateCartItemsAndCache(nextCart);
+    setIsCartOpen(true); // Open cart to show the added items
+  };
+
+  const handleTrackSpecificOrder = (orderId: string) => {
+    setTrackOrderId(orderId);
+    setActiveScreen('track');
+  };
+
   const cartCount = cartItems.reduce((acc, item) => acc + item.qty, 0);
   const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
@@ -203,6 +229,8 @@ export default function App() {
           <OrderTracker
             currentUser={currentUser}
             onRefreshUser={handleProfileUpdate}
+            trackOrderId={trackOrderId}
+            clearTrackOrderId={() => setTrackOrderId(null)}
           />
         )}
 
@@ -210,6 +238,8 @@ export default function App() {
           <UserProfile
             currentUser={currentUser}
             onProfileUpdate={handleProfileUpdate}
+            onReorder={handleReorder}
+            onTrackOrder={handleTrackSpecificOrder}
           />
         )}
 
