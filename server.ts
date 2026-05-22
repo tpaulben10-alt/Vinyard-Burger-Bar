@@ -2,9 +2,124 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
+import mysql from "mysql2/promise";
 import { User, MenuItem, Order, Feedback, OrderItem } from "./src/types";
 
-// Database storage setup
+// MySQL Database Connection Pool (Lazy Initialization)
+let pool: mysql.Pool | null = null;
+
+function getPool(): mysql.Pool {
+  if (!pool) {
+    const host = process.env.DB_HOST;
+    if (!host) {
+      throw new Error("DB_HOST environment variable is missing. Please set your Aiven MySQL Host in AI Studio settings.");
+    }
+    
+    pool = mysql.createPool({
+      host: host,
+      port: parseInt(process.env.DB_PORT || "16587"),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false, // For Aiven, usually enough to just enable SSL
+      },
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+    });
+  }
+  return pool;
+}
+
+async function initDB() {
+  try {
+    const connection = await getPool().getConnection();
+    console.log("Connected to Aiven MySQL database");
+
+    // Users Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        role VARCHAR(50) DEFAULT 'customer',
+        loyaltyPoints INT DEFAULT 0,
+        isOnline BOOLEAN DEFAULT FALSE,
+        address TEXT,
+        lat DOUBLE,
+        lng DOUBLE
+      )
+    `);
+
+    // Orders Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id VARCHAR(255) PRIMARY KEY,
+        userId VARCHAR(255),
+        customerName VARCHAR(255),
+        subtotal DECIMAL(10, 2),
+        deliveryFee DECIMAL(10, 2),
+        distance DECIMAL(10, 2),
+        total DECIMAL(10, 2),
+        status VARCHAR(50),
+        createdAt DATETIME,
+        estimatedMinutes INT,
+        paymentMethod VARCHAR(50),
+        address TEXT,
+        lat DOUBLE,
+        lng DOUBLE,
+        rating INT,
+        feedback TEXT,
+        deliveryInstructions TEXT,
+        FOREIGN KEY (userId) REFERENCES users(id)
+      )
+    `);
+
+    // Order Items Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS order_items (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        orderId VARCHAR(255),
+        menuItemId VARCHAR(255),
+        name VARCHAR(255),
+        price DECIMAL(10, 2),
+        qty INT,
+        customizations JSON,
+        FOREIGN KEY (orderId) REFERENCES orders(id)
+      )
+    `);
+
+    // Status History Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS status_history (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        orderId VARCHAR(255),
+        status VARCHAR(50),
+        timestamp DATETIME,
+        FOREIGN KEY (orderId) REFERENCES orders(id)
+      )
+    `);
+
+    // Feedbacks Table
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS feedbacks (
+        id VARCHAR(255) PRIMARY KEY,
+        customerName VARCHAR(255),
+        rating INT,
+        comment TEXT,
+        createdAt DATETIME
+      )
+    `);
+
+    connection.release();
+    console.log("Database schema initialized successfully");
+  } catch (err) {
+    console.error("Failed to initialize database:", err);
+  }
+}
+
+// Database storage setup (Legacy support for db.json if needed, but we'll focus on MySQL)
 const DB_FILE = path.join(process.cwd(), "db.json");
 
 interface DBStore {
@@ -635,212 +750,300 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Initialize Database
+  await initDB();
+
   // API Route list
   app.get("/api/menu", (req, res) => {
     res.json(INITIAL_MENU);
   });
 
   // Authentication & Management
-  app.post("/api/auth/register", (req, res) => {
-    const { name, email, password, role, isGoogleAuth } = req.body;
+  app.post("/api/auth/register", async (req, res) => {
+    const { name, email, role, isGoogleAuth } = req.body;
     if (!name || !email) {
        res.status(400).json({ error: "Missing required fields" });
        return;
     }
 
-    const store = readDB();
     const cleanEmail = email.toLowerCase().trim();
     
-    // Check duplication
-    const existing = store.users.find(u => u.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      // Simulate OAuth link if Google Login request on existing account
-      if (isGoogleAuth) {
-        existing.isOnline = true;
-        writeDB(store);
-         res.json({ user: existing });
-         return;
+    try {
+      // Check duplication
+      const [existing] = await getPool().query<any[]>("SELECT * FROM users WHERE email = ?", [cleanEmail]);
+      
+      if (existing.length > 0) {
+        const user = existing[0];
+        // Simulate OAuth link if Google Login request on existing account
+        if (isGoogleAuth) {
+          await getPool().query("UPDATE users SET isOnline = ? WHERE id = ?", [true, user.id]);
+          user.isOnline = true;
+          res.json({ user });
+          return;
+        }
+        res.status(400).json({ error: "Email address already registered." });
+        return;
       }
-       res.status(400).json({ error: "Email address already registered." });
-       return;
+
+      const newUser: User = {
+        id: "u-" + Math.random().toString(36).substr(2, 9),
+        name,
+        email: cleanEmail,
+        role: role === "admin" ? "admin" : "customer",
+        loyaltyPoints: 100, // Welcome reward bonus points!
+        isOnline: true,
+        address: "Catmonan St., Poblacion , Hinunangan, Philippines",
+        lat: 10.3971559,
+        lng: 125.1983495
+      };
+
+      await getPool().query(
+        "INSERT INTO users (id, name, email, role, loyaltyPoints, isOnline, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [newUser.id, newUser.name, newUser.email, newUser.role, newUser.loyaltyPoints, newUser.isOnline, newUser.address, newUser.lat, newUser.lng]
+      );
+
+      res.json({ user: newUser });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error during registration" });
     }
-
-    const newUser: User = {
-      id: "u-" + Math.random().toString(36).substr(2, 9),
-      name,
-      email: cleanEmail,
-      role: role === "admin" ? "admin" : "customer",
-      loyaltyPoints: 100, // Welcome reward bonus points!
-      isOnline: true,
-      address: "Catmonan St., Poblacion , Hinunangan, Philippines",
-      lat: 10.3971559,
-      lng: 125.1983495
-    };
-
-    store.users.push(newUser);
-    writeDB(store);
-
-    res.json({ user: newUser });
   });
 
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     const { email, isGoogleAuth } = req.body;
     if (!email) {
        res.status(400).json({ error: "Username or email is required" });
        return;
     }
 
-    const store = readDB();
     const cleanEmail = email.toLowerCase().trim();
-    let user = store.users.find(u => u.email.toLowerCase() === cleanEmail);
+    
+    try {
+      const [users] = await getPool().query<any[]>("SELECT * FROM users WHERE email = ?", [cleanEmail]);
+      let user = users.length > 0 ? users[0] : null;
 
-    if (!user) {
-      if (isGoogleAuth) {
-        // Auto register on google auth
-        const name = email.split("@")[0];
-        const newUser: User = {
-          id: "u-" + Math.random().toString(36).substr(2, 9),
-          name: name.charAt(0).toUpperCase() + name.slice(1),
-          email: cleanEmail,
-          role: "customer",
-          loyaltyPoints: 100,
-          isOnline: true,
-          address: "Catmonan St., Poblacion , Hinunangan, Philippines",
-          lat: 10.3971559,
-          lng: 125.1983495
-        };
-        store.users.push(newUser);
-        writeDB(store);
-         res.json({ user: newUser });
-         return;
+      if (!user) {
+        if (isGoogleAuth) {
+          // Auto register on google auth
+          const name = email.split("@")[0];
+          const newUser: User = {
+            id: "u-" + Math.random().toString(36).substr(2, 9),
+            name: name.charAt(0).toUpperCase() + name.slice(1),
+            email: cleanEmail,
+            role: "customer",
+            loyaltyPoints: 100,
+            isOnline: true,
+            address: "Catmonan St., Poblacion , Hinunangan, Philippines",
+            lat: 10.3971559,
+            lng: 125.1983495
+          };
+          
+          await getPool().query(
+            "INSERT INTO users (id, name, email, role, loyaltyPoints, isOnline, address, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [newUser.id, newUser.name, newUser.email, newUser.role, newUser.loyaltyPoints, newUser.isOnline, newUser.address, newUser.lat, newUser.lng]
+          );
+          
+          res.json({ user: newUser });
+          return;
+        }
+        res.status(400).json({ error: "Invalid credentials." });
+        return;
       }
-       res.status(400).json({ error: "Invalid credentials." });
-       return;
-    }
 
-    user.isOnline = true;
-    writeDB(store);
-    res.json({ user });
+      await getPool().query("UPDATE users SET isOnline = ? WHERE id = ?", [true, user.id]);
+      user.isOnline = true;
+      res.json({ user });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error during login" });
+    }
   });
 
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", async (req, res) => {
     const { userId } = req.body;
     if (userId) {
-      const store = readDB();
-      const user = store.users.find(u => u.id === userId);
-      if (user) {
-        user.isOnline = false;
-        writeDB(store);
+      try {
+        await getPool().query("UPDATE users SET isOnline = ? WHERE id = ?", [false, userId]);
+      } catch (err) {
+        console.error(err);
       }
     }
     res.json({ success: true });
   });
 
-  app.post("/api/auth/profile/update", (req, res) => {
+  app.post("/api/auth/profile/update", async (req, res) => {
     const { userId, name, address, lat, lng } = req.body;
     if (!userId) {
        res.status(400).json({ error: "Unauthorized" });
        return;
     }
 
-    const store = readDB();
-    const user = store.users.find(u => u.id === userId);
-    if (!user) {
-       res.status(404).json({ error: "User not found" });
-       return;
+    try {
+      const [users] = await getPool().query<any[]>("SELECT * FROM users WHERE id = ?", [userId]);
+      const user = users.length > 0 ? users[0] : null;
+      
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const updates: string[] = [];
+      const values: any[] = [];
+
+      if (name) { updates.push("name = ?"); values.push(name); user.name = name; }
+      if (address) { updates.push("address = ?"); values.push(address); user.address = address; }
+      if (lat !== undefined) { updates.push("lat = ?"); values.push(lat); user.lat = lat; }
+      if (lng !== undefined) { updates.push("lng = ?"); values.push(lng); user.lng = lng; }
+
+      if (updates.length > 0) {
+        values.push(userId);
+        await getPool().query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`, values);
+      }
+
+      res.json({ success: true, user });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error during profile update" });
     }
-
-    if (name) user.name = name;
-    if (address) user.address = address;
-    if (lat !== undefined) user.lat = lat;
-    if (lng !== undefined) user.lng = lng;
-
-    writeDB(store);
-    res.json({ success: true, user });
   });
 
   // Fetch accounts list (for Admin)
-  app.get("/api/users", (req, res) => {
-    const store = readDB();
-    res.json(store.users);
-  });
-
-  // Track coordinates and online users
-  app.get("/api/users/online", (req, res) => {
-    const store = readDB();
-    res.json(store.users.filter(u => u.isOnline));
-  });
-
-  // Orders Handling
-  app.get("/api/orders", (req, res) => {
-    const userId = req.query.userId as string;
-    const store = readDB();
-    if (userId) {
-      res.json(store.orders.filter(o => o.userId === userId));
-    } else {
-      res.json(store.orders);
+  app.get("/api/users", async (req, res) => {
+    try {
+      const [users] = await getPool().query("SELECT * FROM users");
+      res.json(users);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error fetching users" });
     }
   });
 
-  app.post("/api/orders/create", (req, res) => {
+  // Track coordinates and online users
+  app.get("/api/users/online", async (req, res) => {
+    try {
+      const [users] = await getPool().query("SELECT * FROM users WHERE isOnline = TRUE");
+      res.json(users);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error fetching online users" });
+    }
+  });
+
+  // Orders Handling
+  app.get("/api/orders", async (req, res) => {
+    const userId = req.query.userId as string;
+    try {
+      let query = "SELECT * FROM orders";
+      let params: any[] = [];
+      if (userId) {
+        query += " WHERE userId = ?";
+        params = [userId];
+      }
+      query += " ORDER BY createdAt DESC";
+      
+      const [orders] = await getPool().query<any[]>(query, params);
+      
+      // Fetch items and history for each order
+      for (const order of orders) {
+        const [items] = await getPool().query("SELECT * FROM order_items WHERE orderId = ?", [order.id]);
+        const [history] = await getPool().query("SELECT * FROM status_history WHERE orderId = ? ORDER BY timestamp ASC", [order.id]);
+        order.items = items;
+        order.statusHistory = history;
+      }
+      
+      res.json(orders);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error fetching orders" });
+    }
+  });
+
+  app.post("/api/orders/create", async (req, res) => {
     const { userId, items, subtotal, deliveryFee, distance, total, paymentMethod, address, lat, lng, redeemPoints, deliveryInstructions } = req.body;
     if (!userId || !items || items.length === 0) {
        res.status(400).json({ error: "Invalid order parameters" });
        return;
     }
 
-    const store = readDB();
-    const user = store.users.find(u => u.id === userId);
-    if (!user) {
-       res.status(404).json({ error: "User account not found" });
-       return;
+    try {
+      const [users] = await getPool().query<any[]>("SELECT * FROM users WHERE id = ?", [userId]);
+      const user = users.length > 0 ? users[0] : null;
+      if (!user) {
+         res.status(404).json({ error: "User account not found" });
+         return;
+      }
+
+      // Process Loyalty points spent
+      let newLoyaltyPoints = user.loyaltyPoints;
+      if (redeemPoints && redeemPoints > 0) {
+        newLoyaltyPoints = Math.max(0, newLoyaltyPoints - redeemPoints);
+      }
+
+      // Earn point calculations (1 point for every ₱10 spent)
+      const earned = Math.floor(total / 10);
+      newLoyaltyPoints += earned;
+
+      await getPool().query("UPDATE users SET loyaltyPoints = ? WHERE id = ?", [newLoyaltyPoints, userId]);
+      user.loyaltyPoints = newLoyaltyPoints;
+
+      const orderId = "VY-" + Math.floor(10000 + Math.random() * 90000);
+      
+      // Estimate Time to finish (e.g. baseline 15 mins + 3 mins per item)
+      const count = items.reduce((acc: number, item: OrderItem) => acc + item.qty, 0);
+      const estimatedMinutes = typeof req.body.estimatedMinutes === "number" ? req.body.estimatedMinutes : 15 + count * 2;
+
+      const nowIso = new Date().toISOString().slice(0, 19).replace('T', ' '); // MySQL format
+      const newOrder: Order = {
+        id: orderId,
+        userId,
+        customerName: user.name,
+        items,
+        subtotal,
+        deliveryFee: deliveryFee !== undefined ? deliveryFee : 0,
+        distance: distance !== undefined ? distance : 0,
+        total,
+        status: "received",
+        createdAt: new Date().toISOString(),
+        estimatedMinutes,
+        paymentMethod: ["counter", "gcash", "card"].includes(paymentMethod) ? paymentMethod : "delivery",
+        address: address || user.address || "Catmonan St., Poblacion , Hinunangan, Philippines",
+        lat: lat !== undefined ? lat : user.lat || 10.3971559,
+        lng: lng !== undefined ? lng : user.lng || 125.1983495,
+        deliveryInstructions: deliveryInstructions || undefined,
+        statusHistory: [
+          { status: "received", timestamp: new Date().toISOString() }
+        ]
+      };
+
+      // Insert Order
+      await getPool().query(
+        `INSERT INTO orders (id, userId, customerName, subtotal, deliveryFee, distance, total, status, createdAt, estimatedMinutes, paymentMethod, address, lat, lng, deliveryInstructions) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [orderId, userId, user.name, subtotal, deliveryFee, distance, total, "received", nowIso, estimatedMinutes, newOrder.paymentMethod, newOrder.address, newOrder.lat, newOrder.lng, deliveryInstructions]
+      );
+
+      // Insert Items
+      for (const item of items) {
+        await getPool().query(
+          "INSERT INTO order_items (orderId, menuItemId, name, price, qty, customizations) VALUES (?, ?, ?, ?, ?, ?)",
+          [orderId, item.menuItemId, item.name, item.price, item.qty, JSON.stringify(item.customizations)]
+        );
+      }
+
+      // Insert History
+      await getPool().query(
+        "INSERT INTO status_history (orderId, status, timestamp) VALUES (?, ?, ?)",
+        [orderId, "received", nowIso]
+      );
+
+      res.json({ success: true, order: newOrder, user });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error during order creation" });
     }
-
-    // Process Loyalty points spent
-    if (redeemPoints && redeemPoints > 0) {
-      user.loyaltyPoints = Math.max(0, user.loyaltyPoints - redeemPoints);
-    }
-
-    // Earn point calculations (1 point for every ₱10 spent)
-    const earned = Math.floor(total / 10);
-    user.loyaltyPoints += earned;
-
-    const orderId = "VY-" + Math.floor(10000 + Math.random() * 90000);
-    
-    // Estimate Time to finish (e.g. baseline 15 mins + 3 mins per item)
-    const count = items.reduce((acc: number, item: OrderItem) => acc + item.qty, 0);
-    const estimatedMinutes = typeof req.body.estimatedMinutes === "number" ? req.body.estimatedMinutes : 15 + count * 2;
-
-    const nowIso = new Date().toISOString();
-    const newOrder: Order = {
-      id: orderId,
-      userId,
-      customerName: user.name,
-      items,
-      subtotal,
-      deliveryFee: deliveryFee !== undefined ? deliveryFee : 0,
-      distance: distance !== undefined ? distance : 0,
-      total,
-      status: "received",
-      createdAt: nowIso,
-      estimatedMinutes,
-      paymentMethod: ["counter", "gcash", "card"].includes(paymentMethod) ? paymentMethod : "delivery",
-      address: address || user.address || "Catmonan St., Poblacion , Hinunangan, Philippines",
-      lat: lat !== undefined ? lat : user.lat || 10.3971559,
-      lng: lng !== undefined ? lng : user.lng || 125.1983495,
-      deliveryInstructions: deliveryInstructions || undefined,
-      statusHistory: [
-        { status: "received", timestamp: nowIso }
-      ]
-    };
-
-    store.orders.unshift(newOrder);
-    writeDB(store);
-
-    res.json({ success: true, order: newOrder, user });
   });
 
-  app.post("/api/orders/:id/status", (req, res) => {
+  app.post("/api/orders/:id/status", async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     if (!status) {
@@ -848,31 +1051,27 @@ async function startServer() {
        return;
     }
 
-    const store = readDB();
-    const order = store.orders.find(o => o.id === id);
-    if (!order) {
-       res.status(404).json({ error: "Order not found" });
-       return;
-    }
+    try {
+      const [orders] = await getPool().query<any[]>("SELECT * FROM orders WHERE id = ?", [id]);
+      const order = orders.length > 0 ? orders[0] : null;
+      if (!order) {
+         res.status(404).json({ error: "Order not found" });
+         return;
+      }
 
-    order.status = status;
-    if (!order.statusHistory) {
-      order.statusHistory = [
-        { status: "received", timestamp: order.createdAt || new Date().toISOString() }
-      ];
+      const nowIso = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+      await getPool().query("UPDATE orders SET status = ? WHERE id = ?", [status, id]);
+      await getPool().query("INSERT INTO status_history (orderId, status, timestamp) VALUES (?, ?, ?)", [id, status, nowIso]);
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error updating status" });
     }
-    const lastHistory = order.statusHistory[order.statusHistory.length - 1];
-    if (!lastHistory || lastHistory.status !== status) {
-      order.statusHistory.push({
-        status,
-        timestamp: new Date().toISOString()
-      });
-    }
-    writeDB(store);
-    res.json({ success: true, order });
   });
 
-  app.post("/api/orders/:id/rate", (req, res) => {
+  app.post("/api/orders/:id/rate", async (req, res) => {
     const { id } = req.params;
     const { rating, comment } = req.body;
     if (!rating) {
@@ -880,32 +1079,38 @@ async function startServer() {
        return;
     }
 
-    const store = readDB();
-    const order = store.orders.find(o => o.id === id);
-    if (!order) {
-       res.status(404).json({ error: "Order not found" });
-       return;
+    try {
+      const [orders] = await getPool().query<any[]>("SELECT * FROM orders WHERE id = ?", [id]);
+      const order = orders.length > 0 ? orders[0] : null;
+      if (!order) {
+         res.status(404).json({ error: "Order not found" });
+         return;
+      }
+
+      const nowIso = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const feedbackId = "f-" + Math.random().toString(36).substr(2, 9);
+
+      await getPool().query("UPDATE orders SET rating = ?, feedback = ? WHERE id = ?", [rating, comment || "", id]);
+      await getPool().query(
+        "INSERT INTO feedbacks (id, customerName, rating, comment, createdAt) VALUES (?, ?, ?, ?, ?)",
+        [feedbackId, order.customerName, rating, comment || "Delicious!", nowIso]
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error during rating" });
     }
-
-    order.rating = rating;
-    order.feedback = comment || "";
-
-    const newFeedback: Feedback = {
-      id: "f-" + Math.random().toString(36).substr(2, 9),
-      customerName: order.customerName,
-      rating,
-      comment: comment || "Delicious!",
-      createdAt: new Date().toISOString()
-    };
-
-    store.feedbacks.unshift(newFeedback);
-    writeDB(store);
-    res.json({ success: true, order, feedback: newFeedback });
   });
 
-  app.get("/api/feedback", (req, res) => {
-    const store = readDB();
-    res.json(store.feedbacks);
+  app.get("/api/feedback", async (req, res) => {
+    try {
+      const [feedbacks] = await getPool().query("SELECT * FROM feedbacks ORDER BY createdAt DESC");
+      res.json(feedbacks);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Server error fetching feedback" });
+    }
   });
 
   // Serve Vite in development, static files in production

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Order, OrderItem, User } from '../types';
-import { MapPin, Award, UserCheck, Edit3, Check, Globe, RefreshCcw, Landmark, Maximize2, Minimize2, History, ShoppingBag, ArrowRight, Clock, ExternalLink } from 'lucide-react';
+import { MapPin, Award, UserCheck, Edit3, Check, Globe, RefreshCcw, Landmark, Maximize2, Minimize2, History, ShoppingBag, ArrowRight, Clock, ExternalLink, Printer, Filter } from 'lucide-react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import AnimatedHQMarker from './AnimatedHQMarker';
 
@@ -28,6 +28,18 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const handlePrint = (order: Order) => {
+    setOrderToPrint(order);
+    // Wait for the DOM element to be rendered before triggering print
+    setTimeout(() => {
+      window.print();
+      // Reset after print dialog closes/is handled
+      setTimeout(() => setOrderToPrint(null), 500);
+    }, 50);
+  };
 
   // Order history states
   const [orderHistory, setOrderHistory] = useState<Order[]>([]);
@@ -60,6 +72,13 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
       setErrorMsg('Full Name and Delivery Address are required.');
       return;
     }
+
+    // Validation logic for address format
+    if (address.trim().length < 10) {
+      setErrorMsg('Please provide a more detailed delivery address (at least 10 characters).');
+      return;
+    }
+
     setErrorMsg('');
     setSuccessMsg('');
     setIsLoading(true);
@@ -107,6 +126,11 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
   };
 
   const hqCoords = { lat: 10.3971559, lng: 125.1983495 };
+
+  const filteredOrders = orderHistory.filter(order => {
+    if (statusFilter === 'all') return true;
+    return order.status === statusFilter;
+  });
 
   // Helper to fit map bounds to multiple coordinates with movement threshold and zoom constraints
   function MapAutoFit({ locations }: { locations: google.maps.LatLngLiteral[] }) {
@@ -420,13 +444,31 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
 
       {/* Order History Section */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="font-serif text-xl font-bold text-brand-green flex items-center gap-2">
-            <History className="w-5 h-5 text-brand-orange" /> My Order History
-          </h2>
-          <span className="text-xs font-mono font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
-            {orderHistory.length} TOTAL RECORDS
-          </span>
+        <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <h2 className="font-serif text-xl font-bold text-brand-green flex items-center gap-2">
+              <History className="w-5 h-5 text-brand-orange" /> My Order History
+            </h2>
+            <span className="text-xs font-mono font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">
+              {filteredOrders.length} {statusFilter !== 'all' ? statusFilter.toUpperCase() : ''} RECORDS
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs font-mono font-bold bg-white border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange text-gray-600 appearance-none cursor-pointer pr-8 bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23666666%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E')] bg-[length:10px_10px] bg-[right_0.75rem_center] bg-no-repeat"
+            >
+              <option value="all">ALL ORDERS</option>
+              <option value="received">RECEIVED</option>
+              <option value="preparing">PREPARING</option>
+              <option value="delivering">DELIVERING</option>
+              <option value="complete">COMPLETE</option>
+              <option value="cancelled">CANCELLED</option>
+            </select>
+          </div>
         </div>
 
         <div className="divide-y divide-gray-100">
@@ -435,18 +477,22 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
               <RefreshCcw className="w-8 h-8 animate-spin opacity-20" />
               <p className="font-mono text-xs uppercase tracking-widest">Retrieving ledger...</p>
             </div>
-          ) : orderHistory.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
                 <ShoppingBag className="w-8 h-8 text-gray-200" />
               </div>
               <div className="max-w-xs">
-                <h4 className="font-serif text-lg font-bold text-gray-400">No Orders Yet</h4>
-                <p className="text-sm text-gray-400 mt-1">Visit our menu to place your first Vinyard Burger Bar order!</p>
+                <h4 className="font-serif text-lg font-bold text-gray-400">No {statusFilter !== 'all' ? statusFilter : ''} Orders Found</h4>
+                <p className="text-sm text-gray-400 mt-1">
+                  {statusFilter === 'all' 
+                    ? "Visit our menu to place your first Vinyard Burger Bar order!" 
+                    : `You don't have any orders with status "${statusFilter}" currently.`}
+                </p>
               </div>
             </div>
           ) : (
-            orderHistory.map((order) => (
+            filteredOrders.map((order) => (
               <div key={order.id} className="p-6 transition-colors hover:bg-gray-50/30 group">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start gap-4">
@@ -487,6 +533,15 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* Print Button */}
+                    <button
+                      onClick={() => handlePrint(order)}
+                      className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-lg border border-gray-200 transition-all active:scale-95 group/print"
+                      title="Print Receipt"
+                    >
+                      <Printer className="w-4 h-4 group-hover/print:text-brand-orange" />
+                    </button>
+
                     {/* Re-order button */}
                     <button
                       onClick={() => onReorder(order.items)}
@@ -518,6 +573,63 @@ export default function UserProfile({ currentUser, onProfileUpdate, onReorder, o
           )}
         </div>
       </div>
+
+      {/* Hidden Print Receipt Template */}
+      {orderToPrint && (
+        <div id="print-receipt" className="hidden print:block p-8 bg-white font-mono text-sm max-w-[80mm] mx-auto border border-dashed border-gray-300">
+          <div className="text-center space-y-2 mb-6">
+            <h1 className="font-serif text-xl font-bold uppercase">Vinyard Burger Bar</h1>
+            <p className="text-[10px]">Hinunangan, Southern Leyte</p>
+            <p className="text-[10px]">EST. 2020</p>
+            <div className="border-b border-dashed border-gray-300 my-2"></div>
+            <h2 className="font-bold">OFFICIAL RECEIPT</h2>
+            <p className="text-[10px]">{new Date(orderToPrint.createdAt).toLocaleString()}</p>
+          </div>
+
+          <div className="space-y-1 mb-4">
+            <p className="flex justify-between"><span>ORDER ID:</span> <span>#{orderToPrint.id}</span></p>
+            <p className="flex justify-between"><span>CUSTOMER:</span> <span className="uppercase">{orderToPrint.customerName}</span></p>
+            <p className="flex justify-between"><span>PAYMENT:</span> <span className="uppercase">{orderToPrint.paymentMethod}</span></p>
+          </div>
+
+          <div className="border-t border-b border-dashed border-gray-300 py-2 mb-4">
+            <div className="flex justify-between font-bold mb-1">
+              <span>ITEM</span>
+              <span>QTY</span>
+              <span>TOTAL</span>
+            </div>
+            {orderToPrint.items.map((item, idx) => (
+              <div key={idx} className="flex justify-between text-[11px] mb-1">
+                <div className="flex flex-col">
+                  <span>{item.name}</span>
+                  {item.customizations && Object.entries(item.customizations).map(([k, v]) => (
+                    <span key={k} className="text-[9px] opacity-70 ml-2">- {k}: {v as string}</span>
+                  ))}
+                </div>
+                <span>{item.qty}x</span>
+                <span>₱{(item.price * item.qty).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-1 mb-6">
+            <p className="flex justify-between"><span>SUBTOTAL:</span> <span>₱{orderToPrint.subtotal.toFixed(2)}</span></p>
+            <p className="flex justify-between"><span>DELIVERY FEE:</span> <span>₱{orderToPrint.deliveryFee.toFixed(2)}</span></p>
+            <p className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+              <span>TOTAL:</span> 
+              <span>₱{orderToPrint.total.toFixed(2)}</span>
+            </p>
+          </div>
+
+          <div className="text-center space-y-2 mt-8 opacity-50">
+            <p className="text-[10px]">Thank you for your patronage!</p>
+            <p className="text-[10px]">Freshness. Quality. Vinyard.</p>
+            <div className="mt-4 flex justify-center">
+              <div className="w-24 h-4 bg-black"></div> {/* Mock barcode */}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
